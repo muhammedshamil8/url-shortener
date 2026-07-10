@@ -1,15 +1,23 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
-
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	fmt.Println("Hello World")
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello World")
+	InitDB()
+	
+	r := gin.Default()
+
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "Welcome to the URL Shortener API"})
 	})
-	http.ListenAndServe(":8080", nil)
+	
+	// r.POST("/shorten", shortenHandler)
+	// r.GET("/:code", redirectHandler)
+	// r.GET("/urls", listAllHandler)
+	// r.DELETE("/:code", deleteHandler)
+	
+	r.Run(":8080")
 }
