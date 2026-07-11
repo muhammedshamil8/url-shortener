@@ -1,1 +1,15 @@
+# Air
+tmp/
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go test
+*.test
+
+# Environment
 .env
