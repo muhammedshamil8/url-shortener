@@ -32,6 +32,13 @@ func shortenHandler(c *gin.Context) {
 		return
 	}
 
+	if err := validateURL(req.URL); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
 	for i := 0; i < MaxRetries; i++ {
 		shortCode, err := generateShortCode()
 		if err != nil {
