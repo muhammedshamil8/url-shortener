@@ -1,10 +1,8 @@
-package main
+package utils
 
 import (
-	"strings"
 	"testing"
 )
-
 
 
 func TestValidateUrl(t *testing.T){
@@ -57,29 +55,10 @@ func TestValidateUrl(t *testing.T){
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateURL(tt.url)
+			err := ValidateURL(tt.url)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("validateURL(%q) = %v; expected %v", tt.url, err, tt.wantErr)
 			}
 		})
-	}
-}
-
-func TestGenerateShortCode(t *testing.T) {
-	
-	code,err := generateShortCode()
-	if err != nil {
-		t.Fatalf("generateShortCode() = %v; expected %v", err, nil)
-	}
-	if len(code) != shortCodeLength {
-		t.Fatalf("generated code length = %d, want %d",
-	len(code),
-	shortCodeLength,
-)
-	}
-	for _,char := range code {
-		if !strings.Contains(charset,string(char)) {
-			t.Errorf("generated invalid character %q in %q", char, code)
-		}
 	}
 }

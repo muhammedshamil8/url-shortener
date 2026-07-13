@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"database/sql"
@@ -12,7 +12,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/muhammedshamil8/url-shortener/repository"
+	"github.com/muhammedshamil8/url-shortener/internal/repository"
+	"github.com/muhammedshamil8/url-shortener/internal/models"
+	"github.com/muhammedshamil8/url-shortener/internal/utils"
 )
 
 const (
@@ -20,14 +22,14 @@ const (
 	UniqueViolation = "23505"
 )
 
-func healthCheckHandler(c *gin.Context) {
+func HealthCheckHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Welcome to URL Shortener Service",
 	})
 }
 
-func shortenHandler(c *gin.Context) {
-	var req ShortenRequest
+func ShortenHandler(c *gin.Context) {
+	var req models.ShortenRequest
 	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Invalid request body",
@@ -35,7 +37,7 @@ func shortenHandler(c *gin.Context) {
 		return
 	}
 
-	if err := validateURL(req.URL); err != nil {
+	if err := utils.ValidateURL(req.URL); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "Invalid URL",
 		})
@@ -43,7 +45,7 @@ func shortenHandler(c *gin.Context) {
 	}
 
 	for i := 0; i < MaxRetries; i++ {
-		shortCode, err := generateShortCode()
+		shortCode, err := utils.GenerateShortCode()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": "Failed to generate short code",
@@ -76,7 +78,7 @@ func shortenHandler(c *gin.Context) {
 
 }
 
-func redirectHandler(c *gin.Context) {
+func RedirectHandler(c *gin.Context) {
 	code := c.Param("code")
 	url, err := repository.GetURLByCode(code)
 	if err != nil {
@@ -98,7 +100,7 @@ func redirectHandler(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, url)
 }
 
-func deleteHandler(c *gin.Context) {
+func DeleteHandler(c *gin.Context) {
 	idstr := c.Param("id")
 	id, err := strconv.Atoi(idstr)
 	if err != nil {
@@ -119,7 +121,7 @@ func deleteHandler(c *gin.Context) {
 	})
 }
 
-func listAllHandler(c *gin.Context) {
+func ListAllHandler(c *gin.Context) {
 	urls, err := repository.GetAllURLs()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
