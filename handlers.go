@@ -37,7 +37,7 @@ func shortenHandler(c *gin.Context) {
 
 	if err := validateURL(req.URL); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": err.Error(),
+			"message": "Invalid URL",
 		})
 		return
 	}
