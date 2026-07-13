@@ -12,10 +12,8 @@ import (
 func setupTestDB(t *testing.T) *Repository {
 	t.Helper()
 
-	err := godotenv.Load("../../.env")
-	if err != nil {
-		t.Fatal("Failed to load .env")
-	}
+	// Load .env if present, but ignore error if missing (e.g. in CI)
+	_ = godotenv.Load("../../.env")
 	db, err := database.InitDB()
 	if err != nil {
 		t.Fatal(err)
