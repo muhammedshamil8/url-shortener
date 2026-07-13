@@ -1,24 +1,31 @@
 package main
 
 import (
-	"log"
 	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/muhammedshamil8/url-shortener/internal/config"
 	"github.com/muhammedshamil8/url-shortener/internal/database"
 	"github.com/muhammedshamil8/url-shortener/internal/handlers"
+	"github.com/muhammedshamil8/url-shortener/internal/logger"
 	"github.com/muhammedshamil8/url-shortener/internal/repository"
 )
 
 func main() {
+	logger.Init()
+
+	logger.Log.Info("Server starting")
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Failed to load .env")
+		logger.Log.Error("Failed to load .env", "error", err)
+		os.Exit(1)
 	}
-	db, err := database.InitDB()
+	cfg := config.Load()
+	db, err := database.InitDB(cfg.DB)
 	if err != nil {
-		log.Fatal(err)
+		logger.Log.Error("Failed to initialize database", "error", err)
+		os.Exit(1)
 	}
 	defer db.Close()
 
@@ -27,7 +34,8 @@ func main() {
 	h := handlers.New(repo)
 
 	if err := database.MigrateUrlTable(db); err != nil {
-		log.Fatal(err)
+		logger.Log.Error("Failed to migrate database", "error", err)
+		os.Exit(1)
 	}
 
 	r := gin.Default()
@@ -38,16 +46,17 @@ func main() {
 	r.DELETE("/:id", h.DeleteHandler)
 	r.GET("/:code", h.RedirectHandler)
 
-	port := os.Getenv("APP_PORT")
+	port := cfg.Server.Port
 	if port == "" {
-		log.Println("APP_PORT is not set")
-		log.Println("Automatic setting to 8080")
+		logger.Log.Warn("APP_PORT is not set")
+		logger.Log.Info("Automatic setting to 8080")
 		port = "8080"
 	}
 
-	log.Printf("Server running on port %s", port)
+	logger.Log.Info("Server running on port " + port)
 	if err := r.Run(":" + port); err != nil {
-		log.Fatal("Failed to start server: " + err.Error())
+		logger.Log.Error("Failed to start server", "error", err)
+		os.Exit(1)
 	}
 
 }

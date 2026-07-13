@@ -7,14 +7,18 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/muhammedshamil8/url-shortener/internal/database"
 	"github.com/muhammedshamil8/url-shortener/internal/models"
+	"github.com/muhammedshamil8/url-shortener/internal/config"
 )
 
 func setupTestDB(t *testing.T) *Repository {
 	t.Helper()
 
-	// Load .env if present, but ignore error if missing (e.g. in CI)
-	_ = godotenv.Load("../../.env")
-	db, err := database.InitDB()
+	err := godotenv.Load("../../.env")
+	if err != nil {
+		t.Log("Failed to load .env")
+	}
+	cfg := config.Load()
+	db, err := database.InitDB(cfg.DB)
 	if err != nil {
 		t.Fatal(err)
 	}

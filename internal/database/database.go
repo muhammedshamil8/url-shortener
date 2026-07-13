@@ -3,23 +3,23 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"log"
-	"os"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/muhammedshamil8/url-shortener/internal/config"
+	"github.com/muhammedshamil8/url-shortener/internal/logger"
 )
 
 var DB *sql.DB
 
-func InitDB() (*sql.DB,error) {
+func InitDB(cfg config.DBConfig) (*sql.DB,error) {
 	var err error
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_PORT"),
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_NAME"),
-		os.Getenv("DB_SSLMODE"))
+		cfg.Host,
+		cfg.Port,
+		cfg.User,
+		cfg.Password,
+		cfg.Name,
+		cfg.SSLMode)
 	DB, err = sql.Open("pgx", dsn)
 	if err != nil {
 		return nil,err
@@ -30,7 +30,7 @@ func InitDB() (*sql.DB,error) {
 		return nil,err
 	}
 
-	log.Println("Successfully connected to PostgreSQL")
+	logger.Log.Info("Successfully connected to PostgreSQL")
 
 	return DB, nil
 }

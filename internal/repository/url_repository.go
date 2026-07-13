@@ -2,8 +2,8 @@ package repository
 
 import (
 	"database/sql"
-	"log"
 
+	"github.com/muhammedshamil8/url-shortener/internal/logger"
 	"github.com/muhammedshamil8/url-shortener/internal/models"
 )
 
@@ -25,7 +25,7 @@ func (r *Repository)CreateShortURL(shortCode, url string) (int64, error) {
 	).Scan(&id)
 
 	if err != nil {
-		log.Println("Error inserting into database:", err)
+		logger.Log.Error("Error inserting into database", "error", err)
 		return 0, err
 	}
 	return id, nil
@@ -52,7 +52,7 @@ func (r *Repository)GetURLByCode(code string) (string, error) {
 func (r *Repository)DeleteURL(id int) error {
 	_, err := r.db.Exec("DELETE FROM urls WHERE id = $1", id)
 	if err != nil {
-		log.Println("Error deleting from database:", err)
+		logger.Log.Error("Error deleting from database", "error", err)
 		return err
 	}
 	return nil
@@ -62,14 +62,14 @@ func (r *Repository)GetAllURLs() ([]models.URL, error) {
 	var urls []models.URL
 	rows, err := r.db.Query("SELECT id, short_code, original_url, created_at, click_count FROM urls")
 	if err != nil {
-		log.Println("Error getting urls from database:", err)
+		logger.Log.Error("Error getting urls from database", "error", err)
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var url models.URL
 		if err := rows.Scan(&url.ID, &url.ShortCode, &url.OriginalURL, &url.CreatedAt, &url.ClickCount); err != nil {
-			log.Println("Error getting urls from database:", err)
+			logger.Log.Error("Error getting urls from database", "error", err)
 			return nil, err
 		}
 		urls = append(urls, url)
