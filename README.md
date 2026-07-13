@@ -5,10 +5,11 @@ A production-style URL shortener built with Go and Gin.
 ## Features
 
 ### Version 1
-- [ ] Create short URL
-- [ ] Redirect to original URL
-- [ ] List all URLs
-- [ ] Delete URL
+- [x] Create short URL
+- [x] Redirect to original URL
+- [x] List all URLs
+- [x] Delete URL
+- [x] Tests
 
 ### Version 2
 - [ ] User registration
