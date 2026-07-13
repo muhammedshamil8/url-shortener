@@ -1,6 +1,9 @@
 # Air
 tmp/
 
+# Coverage reports
+coverage.out
+
 # Binaries
 *.exe
 *.exe~
