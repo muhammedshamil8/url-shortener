@@ -1,8 +1,11 @@
 package main
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
+
+	// "log"
 	"net/http"
 	"os"
 	"strconv"
@@ -47,7 +50,7 @@ func shortenHandler(c *gin.Context) {
 			})
 			return
 		}
-		id,err := repository.CreateShortURL(shortCode, req.URL)
+		id, err := repository.CreateShortURL(shortCode, req.URL)
 		if err != nil {
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) && pgErr.Code == UniqueViolation {
@@ -59,7 +62,7 @@ func shortenHandler(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusCreated, gin.H{
-			"id":   id,
+			"id":           id,
 			"original_url": req.URL,
 			"short_code":   shortCode,
 			"short_url":    os.Getenv("BASE_URL") + shortCode,
@@ -77,11 +80,21 @@ func redirectHandler(c *gin.Context) {
 	code := c.Param("code")
 	url, err := repository.GetURLByCode(code)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"message": "URL not found",
+		if errors.Is(err, sql.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"message": "URL not found",
+			})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Database error",
 		})
 		return
 	}
+	// if err := repository.IncrementClickCount(code); err != nil {
+	// 	log.Println("Error incrementing click count:", err)
+	// }
 	c.Redirect(http.StatusSeeOther, url)
 }
 

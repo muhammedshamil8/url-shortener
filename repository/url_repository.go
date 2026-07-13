@@ -22,7 +22,12 @@ func Init(database *sql.DB) {
 
 func CreateShortURL(shortCode, url string) (int64, error) {
 	var id int64
-	err := db.QueryRow("INSERT INTO urls (short_code, original_url) VALUES ($1, $2) RETURNING id", shortCode, url).Scan(&id)
+	err := db.QueryRow(
+		`INSERT INTO urls (short_code, original_url) 
+		VALUES ($1, $2) RETURNING id`,
+		shortCode, url,
+	).Scan(&id)
+
 	if err != nil {
 		log.Println("Error inserting into database:", err)
 		return 0, err
@@ -32,11 +37,19 @@ func CreateShortURL(shortCode, url string) (int64, error) {
 
 func GetURLByCode(code string) (string, error) {
 	var url string
-	err := db.QueryRow("SELECT original_url FROM urls WHERE short_code = $1", code).Scan(&url)
+
+	err := db.QueryRow(
+		`UPDATE urls
+		 SET click_count = click_count + 1
+		 WHERE short_code = $1
+		 RETURNING original_url`,
+		code,
+	).Scan(&url)
+
 	if err != nil {
-		log.Println("Error getting url from database:", err)
 		return "", err
 	}
+
 	return url, nil
 }
 
@@ -67,3 +80,12 @@ func GetAllURLs() ([]URL, error) {
 	}
 	return urls, nil
 }
+
+// func IncrementClickCount(code string) error {
+// 	_, err := db.Exec("UPDATE urls SET click_count = click_count + 1 WHERE short_code = $1", code)
+// 	if err != nil {
+// 		log.Println("Error incrementing click count:", err)
+// 		return err
+// 	}
+// 	return nil
+// }
