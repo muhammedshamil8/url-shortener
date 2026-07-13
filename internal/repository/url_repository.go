@@ -3,26 +3,22 @@ package repository
 import (
 	"database/sql"
 	"log"
-	"time"
+
+	"github.com/muhammedshamil8/url-shortener/internal/models"
 )
 
-type URL struct {
-	ID          int64     `json:"id"`
-	ShortCode   string    `json:"short_code"`
-	OriginalURL string    `json:"original_url"`
-	CreatedAt   time.Time `json:"created_at"`
-	click_count int       `json:"click_count"`
+type Repository struct {
+    db *sql.DB
 }
 
-var db *sql.DB
-
-func Init(database *sql.DB) {
-	db = database
+func New(db *sql.DB) *Repository {
+    return &Repository{db: db}
 }
 
-func CreateShortURL(shortCode, url string) (int64, error) {
+
+func (r *Repository)CreateShortURL(shortCode, url string) (int64, error) {
 	var id int64
-	err := db.QueryRow(
+	err := r.db.QueryRow(
 		`INSERT INTO urls (short_code, original_url) 
 		VALUES ($1, $2) RETURNING id`,
 		shortCode, url,
@@ -35,10 +31,10 @@ func CreateShortURL(shortCode, url string) (int64, error) {
 	return id, nil
 }
 
-func GetURLByCode(code string) (string, error) {
+func (r *Repository)GetURLByCode(code string) (string, error) {
 	var url string
 
-	err := db.QueryRow(
+	err := r.db.QueryRow(
 		`UPDATE urls
 		 SET click_count = click_count + 1
 		 WHERE short_code = $1
@@ -53,8 +49,8 @@ func GetURLByCode(code string) (string, error) {
 	return url, nil
 }
 
-func DeleteURL(id int) error {
-	_, err := db.Exec("DELETE FROM urls WHERE id = $1", id)
+func (r *Repository)DeleteURL(id int) error {
+	_, err := r.db.Exec("DELETE FROM urls WHERE id = $1", id)
 	if err != nil {
 		log.Println("Error deleting from database:", err)
 		return err
@@ -62,17 +58,17 @@ func DeleteURL(id int) error {
 	return nil
 }
 
-func GetAllURLs() ([]URL, error) {
-	var urls []URL
-	rows, err := db.Query("SELECT id, short_code, original_url, created_at, click_count FROM urls")
+func (r *Repository)GetAllURLs() ([]models.URL, error) {
+	var urls []models.URL
+	rows, err := r.db.Query("SELECT id, short_code, original_url, created_at, click_count FROM urls")
 	if err != nil {
 		log.Println("Error getting urls from database:", err)
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var url URL
-		if err := rows.Scan(&url.ID, &url.ShortCode, &url.OriginalURL, &url.CreatedAt, &url.click_count); err != nil {
+		var url models.URL
+		if err := rows.Scan(&url.ID, &url.ShortCode, &url.OriginalURL, &url.CreatedAt, &url.ClickCount); err != nil {
 			log.Println("Error getting urls from database:", err)
 			return nil, err
 		}

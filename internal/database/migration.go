@@ -1,6 +1,11 @@
 package database
 
-func MigrateUrlTable() error {
+import "database/sql"
+
+
+
+
+func MigrateUrlTable(db *sql.DB) error {
 	query := `
 	CREATE TABLE IF NOT EXISTS urls (
 		id SERIAL PRIMARY KEY,
@@ -11,7 +16,7 @@ func MigrateUrlTable() error {
 	);
 	`
 
-	_, err := DB.Exec(query)
+	_, err := db.Exec(query)
 	if err != nil {
 		return err
 	}

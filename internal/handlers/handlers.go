@@ -12,7 +12,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/muhammedshamil8/url-shortener/internal/repository"
 	"github.com/muhammedshamil8/url-shortener/internal/models"
 	"github.com/muhammedshamil8/url-shortener/internal/utils"
 )
@@ -22,13 +21,21 @@ const (
 	UniqueViolation = "23505"
 )
 
-func HealthCheckHandler(c *gin.Context) {
+type Handler struct {
+    repo URLRepository
+}
+
+func New(repo URLRepository) *Handler {
+	return &Handler{repo: repo}
+}
+
+func (h *Handler)HealthCheckHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Welcome to URL Shortener Service",
 	})
 }
 
-func ShortenHandler(c *gin.Context) {
+func (h *Handler)ShortenHandler(c *gin.Context) {
 	var req models.ShortenRequest
 	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -52,7 +59,7 @@ func ShortenHandler(c *gin.Context) {
 			})
 			return
 		}
-		id, err := repository.CreateShortURL(shortCode, req.URL)
+		id, err := h.repo.CreateShortURL(shortCode, req.URL)
 		if err != nil {
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) && pgErr.Code == UniqueViolation {
@@ -78,9 +85,9 @@ func ShortenHandler(c *gin.Context) {
 
 }
 
-func RedirectHandler(c *gin.Context) {
+func (h *Handler)RedirectHandler(c *gin.Context) {
 	code := c.Param("code")
-	url, err := repository.GetURLByCode(code)
+	url, err := h.repo.GetURLByCode(code)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			c.JSON(http.StatusNotFound, gin.H{
@@ -100,7 +107,7 @@ func RedirectHandler(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, url)
 }
 
-func DeleteHandler(c *gin.Context) {
+func (h *Handler)DeleteHandler(c *gin.Context) {
 	idstr := c.Param("id")
 	id, err := strconv.Atoi(idstr)
 	if err != nil {
@@ -109,7 +116,7 @@ func DeleteHandler(c *gin.Context) {
 		})
 		return
 	}
-	err = repository.DeleteURL(id)
+	err = h.repo.DeleteURL(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"message": "Failed to delete url",
@@ -121,8 +128,8 @@ func DeleteHandler(c *gin.Context) {
 	})
 }
 
-func ListAllHandler(c *gin.Context) {
-	urls, err := repository.GetAllURLs()
+func (h *Handler)ListAllHandler(c *gin.Context) {
+	urls, err := h.repo.GetAllURLs()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Failed to get all urls",

@@ -1,13 +1,14 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
-	."github.com/muhammedshamil8/url-shortener/internal/database"
-	."github.com/muhammedshamil8/url-shortener/internal/handlers"
-	."github.com/muhammedshamil8/url-shortener/internal/repository"
+
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	"github.com/muhammedshamil8/url-shortener/internal/database"
+	"github.com/muhammedshamil8/url-shortener/internal/handlers"
+	"github.com/muhammedshamil8/url-shortener/internal/repository"
 )
 
 func main() {
@@ -15,23 +16,27 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to load .env")
 	}
-	DB , err := InitDB()
+	db, err := database.InitDB()
 	if err != nil {
-		log.Fatal("Error connecting to database:", err)
+		log.Fatal(err)
 	}
-	defer DB.Close()
-	Init(DB)
-	if err := MigrateUrlTable(); err != nil {
-		log.Fatal("Error migrating tables:", err)
+	defer db.Close()
+
+	repo := repository.New(db)
+
+	h := handlers.New(repo)
+
+	if err := database.MigrateUrlTable(db); err != nil {
+		log.Fatal(err)
 	}
 
 	r := gin.Default()
-	r.GET("/health", HealthCheckHandler)
+	r.GET("/health/api", h.HealthCheckHandler)
 
-	r.POST("/shorten", ShortenHandler)
-	r.GET("/:code", RedirectHandler)	
-	r.GET("/urls", ListAllHandler)
-	r.DELETE("/:id", DeleteHandler)
+	r.POST("/shorten", h.ShortenHandler)
+	r.GET("/urls/all", h.ListAllHandler)
+	r.DELETE("/:id", h.DeleteHandler)
+	r.GET("/:code", h.RedirectHandler)
 
 	port := os.Getenv("APP_PORT")
 	if port == "" {
