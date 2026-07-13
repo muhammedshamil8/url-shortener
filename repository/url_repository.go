@@ -11,7 +11,7 @@ type URL struct {
 	ShortCode   string    `json:"short_code"`
 	OriginalURL string    `json:"original_url"`
 	CreatedAt   time.Time `json:"created_at"`
-	click_count      int       `json:"clicks"`
+	click_count int       `json:"click_count"`
 }
 
 var db *sql.DB
@@ -20,13 +20,14 @@ func Init(database *sql.DB) {
 	db = database
 }
 
-func CreateShortURL(shortCode, url string) error {
-	_, err := db.Exec("INSERT INTO urls (short_code, original_url) VALUES ($1, $2)", shortCode, url)
+func CreateShortURL(shortCode, url string) (int64, error) {
+	var id int64
+	err := db.QueryRow("INSERT INTO urls (short_code, original_url) VALUES ($1, $2) RETURNING id", shortCode, url).Scan(&id)
 	if err != nil {
 		log.Println("Error inserting into database:", err)
-		return err
+		return 0, err
 	}
-	return nil
+	return id, nil
 }
 
 func GetURLByCode(code string) (string, error) {
