@@ -16,6 +16,7 @@ func Setup(r *gin.Engine, h *handlers.Handler, cfg *config.Config) {
 	r.Use(middleware.Logger())
 	rateLimiter := middleware.NewRateLimiter()
 	r.Use(middleware.RateLimit(rateLimiter))
+	jwtMiddleware := middleware.AuthMiddleware(cfg)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/:code", h.RedirectHandler)
@@ -34,5 +35,12 @@ func Setup(r *gin.Engine, h *handlers.Handler, cfg *config.Config) {
 	{
 		auth.POST("/register", h.RegisterHandler)
 		auth.POST("/login", h.LoginHandler)
+	}
+
+	authRoutes := r.Group("/api/v1", jwtMiddleware)
+	{
+		authRoutes.GET("/me", h.GetProfileHandler)
+		authRoutes.GET("/my/urls", h.ListUserURLs)
+		authRoutes.DELETE("/my/urls/:id", h.DeleteURL)
 	}
 }
