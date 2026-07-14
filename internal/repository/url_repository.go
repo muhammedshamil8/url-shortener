@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/muhammedshamil8/url-shortener/internal/logger"
@@ -67,11 +68,12 @@ func (r *Repository) GetAllURLs(opts models.ListOptions) ([]models.URL, error) {
 
 	opts.Normalize()
 	query := `
-SELECT id, short_code, original_url, created_at, click_count
-FROM urls
-`
+		SELECT id, short_code, original_url, created_at, click_count
+		FROM urls
+	`
 
 	args := []any{}
+	conditions := []string{}
 
 	sortColumn := "created_at"
 	switch opts.Sort {
@@ -96,8 +98,33 @@ FROM urls
 	}
 
 	if opts.Search != "" {
-		query += " WHERE original_url ILIKE $1 OR short_code ILIKE $1"
+		param := len(args) + 1
+		conditions = append(
+			conditions,
+			fmt.Sprintf(
+				"(original_url ILIKE $%d OR short_code ILIKE $%d)",
+				param,
+				param,
+			),
+		)
+
 		args = append(args, "%"+opts.Search+"%")
+	}
+
+	if opts.MinClicks > 0 {
+		param := len(args) + 1
+		conditions = append(conditions, fmt.Sprintf("click_count >= $%d", param))
+		args = append(args, opts.MinClicks)
+	}
+
+	if opts.MaxClicks > 0 {
+		param := len(args) + 1
+		conditions = append(conditions, fmt.Sprintf("click_count <= $%d", param))
+		args = append(args, opts.MaxClicks)
+	}
+
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
 	limitPos := len(args) + 1

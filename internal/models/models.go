@@ -27,11 +27,14 @@ type ErrorResponse struct {
 }
 
 type ListOptions struct {
-	Page   int
-	Limit  int
-	Sort   string
-	Order  string
-	Search string
+	Page   int    `form:"page"`
+	Limit  int    `form:"limit"`
+	Sort   string `form:"sort"`
+	Order  string `form:"order"`
+	Search string `form:"search"`
+
+	MinClicks int `form:"min_clicks"`
+	MaxClicks int `form:"max_clicks"`
 }
 
 func (o *ListOptions) Normalize() {

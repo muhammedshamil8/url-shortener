@@ -332,11 +332,10 @@ func TestGetAllURLs(t *testing.T) {
 		populateDB()
 
 		urls, err := repo.GetAllURLs(models.ListOptions{
-			Page:   1,
-			Limit:  5,
-			Sort:   "invalid_column_name",
-			Order:  "INVALID_DIR",
-			Search: "some search string",
+			Page:  1,
+			Limit: 5,
+			Sort:  "invalid_column_name",
+			Order: "INVALID_DIR",
 		})
 		if err != nil {
 			t.Fatalf("failed invalid sort/order validation: %v", err)
@@ -406,7 +405,7 @@ func TestGetAllURLs(t *testing.T) {
 		expected int
 	}{
 		{"Search URL", "google", 1},
-		{"Search URL", "GOOGLE", 1},
+		{"Search URL (case insensitive)", "GOOGLE", 1},
 		{"Search Code", "abc", 1},
 		{"Search Missing", "nothing", 0},
 	}
@@ -427,4 +426,66 @@ func TestGetAllURLs(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("Click Count Filtering", func(t *testing.T) {
+		_ = populateDB() // Seeding 5 URLs
+
+		// Set clicks:
+		// "abc" -> 5 clicks
+		for i := 0; i < 5; i++ {
+			if _, err := repo.GetURLByCode("abc"); err != nil {
+				t.Fatalf("failed to increment click: %v", err)
+			}
+		}
+		// "xyz" -> 3 clicks
+		for i := 0; i < 3; i++ {
+			if _, err := repo.GetURLByCode("xyz"); err != nil {
+				t.Fatalf("failed to increment click: %v", err)
+			}
+		}
+		// "def" -> 1 click
+		if _, err := repo.GetURLByCode("def"); err != nil {
+			t.Fatalf("failed to increment click: %v", err)
+		}
+
+		// MinClicks: 2 -> should return abc (5) and xyz (3)
+		urls, err := repo.GetAllURLs(models.ListOptions{
+			Page:      1,
+			Limit:     10,
+			MinClicks: 2,
+		})
+		if err != nil {
+			t.Fatalf("failed to get min_clicks: %v", err)
+		}
+		if len(urls) != 2 {
+			t.Fatalf("expected 2 URLs, got %d", len(urls))
+		}
+
+		// MaxClicks: 2 -> should return def (1), mno (0), pqr (0)
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:      1,
+			Limit:     10,
+			MaxClicks: 2,
+		})
+		if err != nil {
+			t.Fatalf("failed to get max_clicks: %v", err)
+		}
+		if len(urls) != 3 {
+			t.Fatalf("expected 3 URLs, got %d", len(urls))
+		}
+
+		// MinClicks: 1, MaxClicks: 4 -> should return xyz (3) and def (1)
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:      1,
+			Limit:     10,
+			MinClicks: 1,
+			MaxClicks: 4,
+		})
+		if err != nil {
+			t.Fatalf("failed to get range: %v", err)
+		}
+		if len(urls) != 2 {
+			t.Fatalf("expected 2 URLs, got %d", len(urls))
+		}
+	})
 }
