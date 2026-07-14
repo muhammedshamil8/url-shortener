@@ -12,6 +12,32 @@ type URL struct {
 	ShortCode   string    `json:"short_code" example:"abc123"`
 	CreatedAt   time.Time `json:"created_at"`
 	ClickCount  int       `json:"click_count" example:"5"`
+	UserID      int       `json:"user_id" example:"1"`
+}
+
+type User struct {
+	ID        int       `json:"id" example:"1"`
+	Username  string    `json:"username" example:"shamil"`
+	Password  string    `json:"password" example:"password"`
+	Email     string    `json:"email" example:"shamil@[EMAIL_ADDRESS]"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type RegisterRequest struct {
+	Username string `json:"username" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=8"`
+}
+
+type LoginRequest struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
+}
+
+type LoginResponse struct {
+	AccessToken string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	User        User   `json:"user"`
 }
 
 type SuccessResponse struct {
