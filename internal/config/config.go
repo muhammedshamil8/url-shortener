@@ -1,6 +1,9 @@
 package config
 
-import "os"
+import (
+	"os"
+	"strings"
+)
 
 type Config struct {
 	DB     DBConfig
@@ -18,8 +21,9 @@ type DBConfig struct {
 }
 
 type ServerConfig struct {
-	Port    string
-	BaseURL string
+	Port           string
+	BaseURL        string
+	AllowedOrigins []string
 }
 
 func Load() *Config {
@@ -33,8 +37,9 @@ func Load() *Config {
 			SSLMode:  os.Getenv("DB_SSLMODE"),
 		},
 		Server: ServerConfig{
-			Port:    os.Getenv("APP_PORT"),
-			BaseURL: os.Getenv("BASE_URL"),
+			Port:           os.Getenv("APP_PORT"),
+			BaseURL:        os.Getenv("BASE_URL"),
+			AllowedOrigins: strings.Split(getEnv("ALLOWED_ORIGINS", ""), ","),
 		},
 		Env: getEnv("APP_ENV", "development"),
 	}

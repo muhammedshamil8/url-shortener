@@ -31,6 +31,10 @@ func (c *Config) Validate() error {
 	if c.DB.SSLMode == "" {
 		missing = append(missing, "DB_SSLMODE")
 	}
+	if c.Server.AllowedOrigins == nil {
+		missing = append(missing, "ALLOWED_ORIGINS")
+	}
+
 	if len(missing) > 0 {
 		return fmt.Errorf("missing required config fields: %s", strings.Join(missing, ", "))
 	}
