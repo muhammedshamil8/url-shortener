@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/muhammedshamil8/url-shortener/internal/auth"
 	"github.com/muhammedshamil8/url-shortener/internal/config"
 	"github.com/muhammedshamil8/url-shortener/internal/models"
 )
 
-func setupTestRouter(repo URLRepository) *gin.Engine {
+func setupTestRouter(repo Repository) *gin.Engine {
 	r := gin.New()
 	h := New(repo, config.Config{})
 
@@ -24,6 +25,8 @@ func setupTestRouter(repo URLRepository) *gin.Engine {
 	r.GET("/:code", h.RedirectHandler)
 	r.GET("/api/v1/urls", h.ListAllHandler)
 	r.DELETE("/api/v1/:id", h.DeleteHandler)
+	r.POST("/api/v1/auth/register", h.RegisterHandler)
+	r.POST("/api/v1/auth/login", h.LoginHandler)
 	return r
 }
 
@@ -381,6 +384,106 @@ func TestReadyHandler(t *testing.T) {
 			r := setupTestRouter(tt.repo)
 
 			req, err := http.NewRequest(http.MethodGet, tt.path, nil)
+			if err != nil {
+				t.Fatalf("failed to create request: %v", err)
+			}
+			r.ServeHTTP(recorder, req)
+
+			if recorder.Code != tt.expectedStatus {
+				t.Fatalf("got %d, want %d", recorder.Code, tt.expectedStatus)
+			}
+			if !strings.Contains(recorder.Body.String(), tt.expectedBody) {
+				t.Fatalf("response body = %q, want it to contain %q",
+					recorder.Body.String(),
+					tt.expectedBody,
+				)
+			}
+		})
+	}
+}
+
+func TestRegisterHandler(t *testing.T) {
+	tests := []struct {
+		name           string
+		path           string
+		body           string
+		expectedStatus int
+		expectedBody   string
+		repo           *FakeRepository
+	}{
+		{
+			name:           "Register",
+			path:           "/api/v1/auth/register",
+			body:           `{"username":"shamil","email":"shamil@example.com","password":"password123"}`,
+			expectedStatus: http.StatusOK,
+			expectedBody:   "success",
+			repo: &FakeRepository{
+				CreateUserFunc: func(username, email, password string) (int64, error) {
+					return 1, nil
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			r := setupTestRouter(tt.repo)
+
+			req, err := http.NewRequest(http.MethodPost, tt.path, strings.NewReader(tt.body))
+			if err != nil {
+				t.Fatalf("failed to create request: %v", err)
+			}
+			r.ServeHTTP(recorder, req)
+
+			if recorder.Code != tt.expectedStatus {
+				t.Fatalf("got %d, want %d", recorder.Code, tt.expectedStatus)
+			}
+			if !strings.Contains(recorder.Body.String(), tt.expectedBody) {
+				t.Fatalf("response body = %q, want it to contain %q",
+					recorder.Body.String(),
+					tt.expectedBody,
+				)
+			}
+		})
+	}
+}
+
+func TestLoginHandler(t *testing.T) {
+	tests := []struct {
+		name           string
+		path           string
+		body           string
+		expectedStatus int
+		expectedBody   string
+		repo           *FakeRepository
+	}{
+		{
+			name:           "Login",
+			path:           "/api/v1/auth/login",
+			body:           `{"email":"shamil@example.com","password":"password123"}`,
+			expectedStatus: http.StatusOK,
+			expectedBody:   "success",
+			repo: &FakeRepository{
+				GetUserByEmailFunc: func(email string) (*models.User, error) {
+					hash, _ := auth.HashPassword("password123")
+					return &models.User{
+						ID:           1,
+						Username:     "shamil",
+						Email:        "shamil@example.com",
+						PasswordHash: hash,
+					}, nil
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			r := setupTestRouter(tt.repo)
+
+			req, err := http.NewRequest(http.MethodPost, tt.path, strings.NewReader(tt.body))
 			if err != nil {
 				t.Fatalf("failed to create request: %v", err)
 			}

@@ -1,6 +1,10 @@
 package handlers
 
-import "github.com/muhammedshamil8/url-shortener/internal/models"
+import (
+	"errors"
+
+	"github.com/muhammedshamil8/url-shortener/internal/models"
+)
 
 type FakeRepository struct {
 	GetURLByCodeFunc   func(string) (string, error)
@@ -8,6 +12,25 @@ type FakeRepository struct {
 	GetAllURLsFunc     func(models.ListOptions) ([]models.URL, error)
 	HealthFunc         func() error
 	CreateShortURLFunc func(string, string) (int64, error)
+
+	CreateUserFunc     func(string, string, string) (int64, error)
+	GetUserByEmailFunc func(string) (*models.User, error)
+}
+
+// CreateUser implements [Repository].
+func (m *FakeRepository) CreateUser(username string, email string, password string) (int64, error) {
+	if m.CreateUserFunc != nil {
+		return m.CreateUserFunc(username, email, password)
+	}
+	return 1, nil
+}
+
+// GetUserByEmail implements [Repository].
+func (m *FakeRepository) GetUserByEmail(email string) (*models.User, error) {
+	if m.GetUserByEmailFunc != nil {
+		return m.GetUserByEmailFunc(email)
+	}
+	return nil, errors.New("user not found")
 }
 
 func (m *FakeRepository) Health() error {

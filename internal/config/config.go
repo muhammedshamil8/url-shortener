@@ -8,7 +8,15 @@ import (
 type Config struct {
 	DB     DBConfig
 	Server ServerConfig
+	JWT    JWTConfig
 	Env    string
+}
+
+type JWTConfig struct {
+	AccessTokenSecret  string
+	AccessTokenExpiry  string
+	RefreshTokenSecret string
+	RefreshTokenExpiry string
 }
 
 type DBConfig struct {
@@ -40,6 +48,12 @@ func Load() *Config {
 			Port:           os.Getenv("APP_PORT"),
 			BaseURL:        os.Getenv("BASE_URL"),
 			AllowedOrigins: strings.Split(getEnv("ALLOWED_ORIGINS", ""), ","),
+		},
+		JWT: JWTConfig{
+			AccessTokenSecret:  os.Getenv("JWT_ACCESS_TOKEN_SECRET"),
+			AccessTokenExpiry:  os.Getenv("JWT_ACCESS_TOKEN_EXPIRY"),
+			RefreshTokenSecret: os.Getenv("JWT_REFRESH_TOKEN_SECRET"),
+			RefreshTokenExpiry: os.Getenv("JWT_REFRESH_TOKEN_EXPIRY"),
 		},
 		Env: getEnv("APP_ENV", "development"),
 	}

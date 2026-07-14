@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/muhammedshamil8/url-shortener/internal/auth"
 	"github.com/muhammedshamil8/url-shortener/internal/config"
 	"github.com/muhammedshamil8/url-shortener/internal/models"
 	"github.com/muhammedshamil8/url-shortener/internal/response"
@@ -21,11 +22,11 @@ const (
 )
 
 type Handler struct {
-	repo URLRepository
+	repo Repository
 	cfg  config.Config
 }
 
-func New(repo URLRepository, cfg config.Config) *Handler {
+func New(repo Repository, cfg config.Config) *Handler {
 	return &Handler{repo: repo, cfg: cfg}
 }
 
@@ -44,19 +45,19 @@ func New(repo URLRepository, cfg config.Config) *Handler {
 func (h *Handler) ShortenHandler(c *gin.Context) {
 	var req models.ShortenRequest
 	if err := c.BindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request body")
+		response.BadRequest(c, "Invalid request body")
 		return
 	}
 
 	if err := utils.ValidateURL(req.URL); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid URL")
+		response.BadRequest(c, "Invalid URL")
 		return
 	}
 
 	for i := 0; i < MaxRetries; i++ {
 		shortCode, err := utils.GenerateShortCode()
 		if err != nil {
-			response.Error(c, http.StatusInternalServerError, "Failed to generate short code")
+			response.InternalServerError(c, "Failed to generate short code")
 			return
 		}
 		id, err := h.repo.CreateShortURL(shortCode, req.URL)
@@ -65,7 +66,7 @@ func (h *Handler) ShortenHandler(c *gin.Context) {
 			if errors.As(err, &pgErr) && pgErr.Code == UniqueViolation {
 				continue
 			}
-			response.Error(c, http.StatusInternalServerError, "Failed to create short url")
+			response.InternalServerError(c, "Failed to create short url")
 			return
 		}
 		response.Created(c, gin.H{
@@ -77,7 +78,7 @@ func (h *Handler) ShortenHandler(c *gin.Context) {
 		return
 	}
 
-	response.Error(c, http.StatusInternalServerError, fmt.Sprintf("Failed to create short url after %d attempts", MaxRetries))
+	response.InternalServerError(c, fmt.Sprintf("Failed to create short url after %d attempts", MaxRetries))
 
 }
 
@@ -97,11 +98,11 @@ func (h *Handler) RedirectHandler(c *gin.Context) {
 	url, err := h.repo.GetURLByCode(code)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			response.Error(c, http.StatusNotFound, "URL not found")
+			response.NotFound(c, "URL not found")
 			return
 		}
 
-		response.Error(c, http.StatusInternalServerError, "Database error")
+		response.InternalServerError(c, "Database error")
 		return
 	}
 	// if err := repository.IncrementClickCount(code); err != nil {
@@ -126,16 +127,16 @@ func (h *Handler) DeleteHandler(c *gin.Context) {
 	idstr := c.Param("id")
 	id, err := strconv.Atoi(idstr)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid id")
+		response.BadRequest(c, "Invalid id")
 		return
 	}
 	err = h.repo.DeleteURL(id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			response.Error(c, http.StatusNotFound, "URL not found")
+			response.NotFound(c, "URL not found")
 			return
 		}
-		response.Error(c, http.StatusInternalServerError, "Failed to delete url")
+		response.InternalServerError(c, "Failed to delete url")
 		return
 	}
 	response.OK(c, gin.H{
@@ -165,15 +166,105 @@ func (h *Handler) DeleteHandler(c *gin.Context) {
 func (h *Handler) ListAllHandler(c *gin.Context) {
 	var opts models.ListOptions
 	if err := c.ShouldBindQuery(&opts); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid query parameters")
+		response.BadRequest(c, "Invalid query parameters")
 		return
 	}
 	urls, err := h.repo.GetAllURLs(opts)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to get all urls")
+		response.InternalServerError(c, "Failed to get all urls")
 		return
 	}
 	response.OK(c, gin.H{
 		"urls": urls,
 	})
+}
+
+// Register godoc
+//
+//	@Summary	Register a new account
+//	@Description	Register a new account
+//	@Tags	Users
+//	@Param	request	body	models.RegisterRequest	true	"Request body"
+//	@Produce	json
+//	@Success	200	{object}	models.SuccessResponse
+//	@Failure	400	{object}	models.ErrorResponse
+//	@Failure	500	{object}	models.ErrorResponse
+//	@Router	/register [post]
+func (h *Handler) RegisterHandler(c *gin.Context) {
+	var req models.RegisterRequest
+	if err := c.BindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request body")
+		return
+	}
+
+	hashedPassword, err := auth.HashPassword(req.Password)
+	if err != nil {
+		response.InternalServerError(c, "Failed to hash password")
+		return
+	}
+
+	id, err := h.repo.CreateUser(req.Username, req.Email, hashedPassword)
+	if err != nil {
+		response.InternalServerError(c, "Failed to create user")
+		return
+	}
+	response.OK(c, gin.H{
+		"id":       id,
+		"username": req.Username,
+		"email":    req.Email,
+	})
+}
+
+// Login godoc
+//
+//	@Summary	Login to account
+//	@Description	Login to account
+//	@Tags	Users
+//	@Param	request	body	models.LoginRequest	true	"Request body"
+//	@Produce	json
+//	@Success	200	{object}	models.SuccessResponse
+//	@Failure	400	{object}	models.ErrorResponse
+//	@Failure	401	{object}	models.ErrorResponse
+//	@Failure	500	{object}	models.ErrorResponse
+//	@Router	/login [post]
+func (h *Handler) LoginHandler(c *gin.Context) {
+	var req models.LoginRequest
+	if err := c.BindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request body")
+		return
+	}
+
+	user, err := h.repo.GetUserByEmail(req.Email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			response.Unauthorized(c, "Invalid credentials")
+			return
+		}
+		response.InternalServerError(c, "Database error")
+		return
+	}
+
+	if err := auth.CheckPasswordHash(req.Password, user.PasswordHash); err != nil {
+		response.Unauthorized(c, "Invalid credentials")
+		return
+	}
+
+	accessToken, err := auth.GenerateToken(user.ID, user.Email, h.cfg.JWT.AccessTokenSecret, h.cfg.JWT.AccessTokenExpiry)
+	if err != nil {
+		response.InternalServerError(c, "Failed to generate access token")
+		return
+	}
+
+	refreshToken, err := auth.GenerateToken(user.ID, user.Email, h.cfg.JWT.RefreshTokenSecret, h.cfg.JWT.RefreshTokenExpiry)
+	if err != nil {
+		response.InternalServerError(c, "Failed to generate refresh token")
+		return
+	}
+
+	response.OK(c, models.LoginResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		User:         *user,
+	})
+
 }

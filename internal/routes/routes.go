@@ -29,4 +29,10 @@ func Setup(r *gin.Engine, h *handlers.Handler, cfg *config.Config) {
 		api.GET("/urls", h.ListAllHandler)
 		api.DELETE("/urls/:id", h.DeleteHandler)
 	}
+
+	auth := r.Group("/api/v1/auth")
+	{
+		auth.POST("/register", h.RegisterHandler)
+		auth.POST("/login", h.LoginHandler)
+	}
 }

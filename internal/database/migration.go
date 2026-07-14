@@ -41,5 +41,3 @@ func MigrateUrlTable(db *sql.DB) error {
 
 	return nil
 }
-
-
