@@ -9,6 +9,7 @@ import (
 	"github.com/muhammedshamil8/url-shortener/internal/database"
 	"github.com/muhammedshamil8/url-shortener/internal/handlers"
 	"github.com/muhammedshamil8/url-shortener/internal/logger"
+	"github.com/muhammedshamil8/url-shortener/internal/middleware"
 	"github.com/muhammedshamil8/url-shortener/internal/repository"
 )
 
@@ -38,9 +39,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	r := gin.Default()
-	r.GET("/health/api", h.HealthCheckHandler)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	if err := r.SetTrustedProxies(nil); err != nil {
+		logger.Log.Error("Failed to set trusted proxies", "error", err)
+		os.Exit(1)
+	}
+	r.Use(gin.Recovery())
+	r.Use(middleware.RequestID())
+	r.Use(middleware.Logger())
 
+	r.GET("/health/api", h.HealthCheckHandler)
 	r.POST("/shorten", h.ShortenHandler)
 	r.GET("/urls/all", h.ListAllHandler)
 	r.DELETE("/:id", h.DeleteHandler)

@@ -14,13 +14,6 @@ type URL struct {
 	ClickCount    int       `json:"click_count" db:"click_count"`
 }
 
-type Response struct {
-	Status  string `json:"status"`
-	Message string `json:"message"`
-	Data    any    `json:"data,omitempty"`
-}
-
-
 type HealthResponse struct {
 	Status string `json:"status"`
 }

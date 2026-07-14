@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-
-	// "log"
 	"net/http"
 	"os"
 	"strconv"
@@ -13,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/muhammedshamil8/url-shortener/internal/models"
+	"github.com/muhammedshamil8/url-shortener/internal/response"
 	"github.com/muhammedshamil8/url-shortener/internal/utils"
 )
 
@@ -30,7 +29,7 @@ func New(repo URLRepository) *Handler {
 }
 
 func (h *Handler)HealthCheckHandler(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
+	response.OK(c, gin.H{
 		"message": "Welcome to URL Shortener Service",
 	})
 }
@@ -38,25 +37,19 @@ func (h *Handler)HealthCheckHandler(c *gin.Context) {
 func (h *Handler)ShortenHandler(c *gin.Context) {
 	var req models.ShortenRequest
 	if err := c.BindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Invalid request body",
-		})
+		response.Error(c, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	if err := utils.ValidateURL(req.URL); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Invalid URL",
-		})
+		response.Error(c, http.StatusBadRequest, "Invalid URL")
 		return
 	}
 
 	for i := 0; i < MaxRetries; i++ {
 		shortCode, err := utils.GenerateShortCode()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": "Failed to generate short code",
-			})
+			response.Error(c, http.StatusInternalServerError, "Failed to generate short code")
 			return
 		}
 		id, err := h.repo.CreateShortURL(shortCode, req.URL)
@@ -65,12 +58,10 @@ func (h *Handler)ShortenHandler(c *gin.Context) {
 			if errors.As(err, &pgErr) && pgErr.Code == UniqueViolation {
 				continue
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": "Failed to create short url",
-			})
+			response.Error(c, http.StatusInternalServerError, "Failed to create short url")
 			return
 		}
-		c.JSON(http.StatusCreated, gin.H{
+		response.Created(c, gin.H{
 			"id":           id,
 			"original_url": req.URL,
 			"short_code":   shortCode,
@@ -79,9 +70,7 @@ func (h *Handler)ShortenHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusInternalServerError, gin.H{
-		"message": fmt.Sprintf("Failed to create short url after %d attempts", MaxRetries),
-	})
+	response.Error(c, http.StatusInternalServerError, fmt.Sprintf("Failed to create short url after %d attempts", MaxRetries))
 
 }
 
@@ -90,15 +79,11 @@ func (h *Handler)RedirectHandler(c *gin.Context) {
 	url, err := h.repo.GetURLByCode(code)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			c.JSON(http.StatusNotFound, gin.H{
-				"message": "URL not found",
-			})
+			response.Error(c, http.StatusNotFound, "URL not found")
 			return
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Database error",
-		})
+		response.Error(c, http.StatusInternalServerError, "Database error")
 		return
 	}
 	// if err := repository.IncrementClickCount(code); err != nil {
@@ -111,19 +96,15 @@ func (h *Handler)DeleteHandler(c *gin.Context) {
 	idstr := c.Param("id")
 	id, err := strconv.Atoi(idstr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": "Invalid id",
-		})
+		response.Error(c, http.StatusBadRequest, "Invalid id")
 		return
 	}
 	err = h.repo.DeleteURL(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"message": "Failed to delete url",
-		})
+		response.Error(c, http.StatusNotFound, "Failed to delete url")
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
+	response.OK(c, gin.H{
 		"message": "URL deleted successfully",
 	})
 }
@@ -131,12 +112,10 @@ func (h *Handler)DeleteHandler(c *gin.Context) {
 func (h *Handler)ListAllHandler(c *gin.Context) {
 	urls, err := h.repo.GetAllURLs()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Failed to get all urls",
-		})
+		response.Error(c, http.StatusInternalServerError, "Failed to get all urls")
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
+	response.OK(c, gin.H{
 		"urls": urls,
 	})
 }
