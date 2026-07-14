@@ -27,6 +27,7 @@ func setupTestRouter(repo Repository) *gin.Engine {
 	r.DELETE("/api/v1/:id", h.DeleteHandler)
 	r.POST("/api/v1/auth/register", h.RegisterHandler)
 	r.POST("/api/v1/auth/login", h.LoginHandler)
+	r.POST("/api/v1/auth/refresh", h.RefreshHandler)
 
 	authGroup := r.Group("/api/v1", func(c *gin.Context) {
 		c.Set("user_id", 1)
@@ -654,6 +655,76 @@ func TestGetProfileHandler(t *testing.T) {
 
 			if recorder.Code != tt.expectedStatus {
 				t.Fatalf("got %d, want %d", recorder.Code, tt.expectedStatus)
+			}
+			if !strings.Contains(recorder.Body.String(), tt.expectedBody) {
+				t.Fatalf("response body = %q, want it to contain %q",
+					recorder.Body.String(),
+					tt.expectedBody,
+				)
+			}
+		})
+	}
+}
+
+func TestRefreshHandler(t *testing.T) {
+	token, err := auth.GenerateToken(1, "shamil@example.com", "test-refresh-secret", "15m")
+	if err != nil {
+		t.Fatalf("failed to generate token: %v", err)
+	}
+
+	tests := []struct {
+		name           string
+		path           string
+		body           string
+		config         config.Config
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name: "Refresh Success",
+			path: "/api/v1/auth/refresh",
+			body: `{"refresh_token":"` + token + `"}`,
+			config: config.Config{
+				JWT: config.JWTConfig{
+					AccessTokenSecret:  "test-access-secret",
+					AccessTokenExpiry:  "15m",
+					RefreshTokenSecret: "test-refresh-secret",
+					RefreshTokenExpiry: "7d",
+				},
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody:   "access_token",
+		},
+		{
+			name: "Invalid Token",
+			path: "/api/v1/auth/refresh",
+			body: `{"refresh_token":"invalid.token.signature"}`,
+			config: config.Config{
+				JWT: config.JWTConfig{
+					RefreshTokenSecret: "test-refresh-secret",
+				},
+			},
+			expectedStatus: http.StatusUnauthorized,
+			expectedBody:   "Invalid or expired refresh token",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			r := gin.New()
+			h := New(&FakeRepository{}, tt.config)
+			r.POST("/api/v1/auth/refresh", h.RefreshHandler)
+
+			req, err := http.NewRequest(http.MethodPost, tt.path, strings.NewReader(tt.body))
+			if err != nil {
+				t.Fatalf("failed to create request: %v", err)
+			}
+			req.Header.Set("Content-Type", "application/json")
+			r.ServeHTTP(recorder, req)
+
+			if recorder.Code != tt.expectedStatus {
+				t.Fatalf("got %d, want %d (body: %s)", recorder.Code, tt.expectedStatus, recorder.Body.String())
 			}
 			if !strings.Contains(recorder.Body.String(), tt.expectedBody) {
 				t.Fatalf("response body = %q, want it to contain %q",
