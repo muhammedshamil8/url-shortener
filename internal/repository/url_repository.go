@@ -123,6 +123,18 @@ func (r *Repository) GetAllURLs(opts models.ListOptions) ([]models.URL, error) {
 		args = append(args, opts.MaxClicks)
 	}
 
+	if !opts.MinDate.IsZero() {
+		param := len(args) + 1
+		conditions = append(conditions, fmt.Sprintf("created_at >= $%d", param))
+		args = append(args, opts.MinDate)
+	}
+
+	if !opts.MaxDate.IsZero() {
+		param := len(args) + 1
+		conditions = append(conditions, fmt.Sprintf("created_at <= $%d", param))
+		args = append(args, opts.MaxDate)
+	}
+
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}

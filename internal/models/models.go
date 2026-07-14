@@ -33,8 +33,10 @@ type ListOptions struct {
 	Order  string `form:"order"`
 	Search string `form:"search"`
 
-	MinClicks int `form:"min_clicks"`
-	MaxClicks int `form:"max_clicks"`
+	MinClicks int       `form:"min_clicks"`
+	MaxClicks int       `form:"max_clicks"`
+	MinDate   time.Time `form:"min_date"`
+	MaxDate   time.Time `form:"max_date"`
 }
 
 func (o *ListOptions) Normalize() {

@@ -488,4 +488,49 @@ func TestGetAllURLs(t *testing.T) {
 			t.Fatalf("expected 2 URLs, got %d", len(urls))
 		}
 	})
+
+	t.Run("Date Range Filtering", func(t *testing.T) {
+		created := populateDB() // 5 URLs starting from baseTime (-10m) offset by 1m each
+		baseTime := created[0].CreatedAt
+
+		// MinDate: baseTime + 90 seconds -> should return created[2] (baseTime + 2m), created[3] (baseTime + 3m), created[4] (baseTime + 4m)
+		urls, err := repo.GetAllURLs(models.ListOptions{
+			Page:    1,
+			Limit:   10,
+			MinDate: baseTime.Add(90 * time.Second),
+		})
+		if err != nil {
+			t.Fatalf("failed to get min_date: %v", err)
+		}
+		if len(urls) != 3 {
+			t.Fatalf("expected 3 URLs (MinDate), got %d", len(urls))
+		}
+
+		// MaxDate: baseTime + 150 seconds -> should return created[0], created[1], created[2] (since created[2] is +2m = 120s <= 150s)
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:    1,
+			Limit:   10,
+			MaxDate: baseTime.Add(150 * time.Second),
+		})
+		if err != nil {
+			t.Fatalf("failed to get max_date: %v", err)
+		}
+		if len(urls) != 3 {
+			t.Fatalf("expected 3 URLs (MaxDate), got %d", len(urls))
+		}
+
+		// Range: baseTime + 90s to baseTime + 210s -> should return created[2] (baseTime + 2m = 120s) and created[3] (baseTime + 3m = 180s)
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:    1,
+			Limit:   10,
+			MinDate: baseTime.Add(90 * time.Second),
+			MaxDate: baseTime.Add(210 * time.Second),
+		})
+		if err != nil {
+			t.Fatalf("failed to get date range: %v", err)
+		}
+		if len(urls) != 2 {
+			t.Fatalf("expected 2 URLs (Range), got %d", len(urls))
+		}
+	})
 }
