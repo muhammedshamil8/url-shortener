@@ -1,7 +1,9 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
+	"time"
 
 	"github.com/muhammedshamil8/url-shortener/internal/logger"
 	"github.com/muhammedshamil8/url-shortener/internal/models"
@@ -10,6 +12,8 @@ import (
 type Repository struct {
 	db *sql.DB
 }
+
+const healthCheckTimeout = time.Second
 
 func New(db *sql.DB) *Repository {
 	return &Repository{db: db}
@@ -74,6 +78,20 @@ func (r *Repository) GetAllURLs() ([]models.URL, error) {
 		urls = append(urls, url)
 	}
 	return urls, nil
+}
+
+func (r *Repository) Health() error {
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		healthCheckTimeout,
+	)
+	defer cancel()
+	err := r.db.PingContext(ctx)
+	if err != nil {
+		logger.Log.Error("Error pinging database", "error", err)
+		return err
+	}
+	return nil
 }
 
 // func IncrementClickCount(code string) error {

@@ -7,4 +7,6 @@ type URLRepository interface {
 	GetURLByCode(code string) (string, error)
 	DeleteURL(id int) error
 	GetAllURLs() ([]models.URL, error)
+
+	Health() error
 }

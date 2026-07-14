@@ -22,7 +22,9 @@ func Setup(r *gin.Engine, h *handlers.Handler, cfg *config.Config) {
 
 	api := r.Group("/api/v1")
 	{
-		api.GET("/health", h.HealthCheckHandler)
+		api.GET("/live", h.LiveHandler)
+		api.GET("/ready", h.ReadyHandler)
+
 		api.POST("/shorten", h.ShortenHandler)
 		api.GET("/urls", h.ListAllHandler)
 		api.DELETE("/urls/:id", h.DeleteHandler)

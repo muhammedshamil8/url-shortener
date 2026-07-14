@@ -29,21 +29,6 @@ func New(repo URLRepository, cfg config.Config) *Handler {
 	return &Handler{repo: repo, cfg: cfg}
 }
 
-// HealthCheck godoc
-//
-//	@Summary		Health Check
-//	@Description	Check if the API is running
-//	@Tags			Health
-//	@Produce		json
-//	@Success		200	{object}	models.SuccessResponse
-//	@Failure		500	{object}	models.ErrorResponse
-//	@Router			/health/api [get]
-func (h *Handler) HealthCheckHandler(c *gin.Context) {
-	response.OK(c, gin.H{
-		"message": "Welcome to URL Shortener Service",
-	})
-}
-
 // Shorten godoc
 //
 //		@Summary	Shorten a URL
@@ -146,7 +131,11 @@ func (h *Handler) DeleteHandler(c *gin.Context) {
 	}
 	err = h.repo.DeleteURL(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Failed to delete url")
+		if errors.Is(err, sql.ErrNoRows) {
+			response.Error(c, http.StatusNotFound, "URL not found")
+			return
+		}
+		response.Error(c, http.StatusInternalServerError, "Failed to delete url")
 		return
 	}
 	response.OK(c, gin.H{
