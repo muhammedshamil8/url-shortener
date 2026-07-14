@@ -129,7 +129,7 @@ func TestGetAllURLs(t *testing.T) {
 		}
 	}
 
-	populateDB := func() []models.URL {
+	populateDB := func() time.Time {
 		resetDB()
 		data := []struct {
 			code string
@@ -162,7 +162,7 @@ func TestGetAllURLs(t *testing.T) {
 			}
 			created = append(created, url)
 		}
-		return created
+		return baseTime
 	}
 
 	t.Run("Empty Table", func(t *testing.T) {
@@ -180,7 +180,7 @@ func TestGetAllURLs(t *testing.T) {
 	})
 
 	t.Run("Pagination and Limits", func(t *testing.T) {
-		created := populateDB()
+		_ = populateDB()
 
 		urls, err := repo.GetAllURLs(models.ListOptions{
 			Page:  1,
@@ -189,13 +189,13 @@ func TestGetAllURLs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to get page 1: %v", err)
 		}
-		if urls[0].ShortCode != "pqr" || urls[1].ShortCode != "mno" {
-			t.Fatal("unexpected urls")
-		}
 		if len(urls) != 2 {
 			t.Fatalf("expected 2 URLs, got %d", len(urls))
 		}
-		if urls[0].ID != created[4].ID || urls[1].ID != created[3].ID {
+		if urls[0].ShortCode != "pqr" || urls[1].ShortCode != "mno" {
+			t.Fatal("unexpected urls")
+		}
+		if urls[0].ID != 5 || urls[1].ID != 4 {
 			t.Fatalf("unexpected pagination results on page 1")
 		}
 
@@ -209,7 +209,7 @@ func TestGetAllURLs(t *testing.T) {
 		if len(urls) != 2 {
 			t.Fatalf("expected 2 URLs, got %d", len(urls))
 		}
-		if urls[0].ID != created[2].ID || urls[1].ID != created[1].ID {
+		if urls[0].ID != 3 || urls[1].ID != 2 {
 			t.Fatalf("unexpected pagination results on page 2")
 		}
 
@@ -223,7 +223,7 @@ func TestGetAllURLs(t *testing.T) {
 		if len(urls) != 1 {
 			t.Fatalf("expected 1 URL on page 3, got %d", len(urls))
 		}
-		if urls[0].ID != created[0].ID {
+		if urls[0].ID != 1 {
 			t.Fatalf("unexpected pagination results on page 3")
 		}
 
@@ -267,7 +267,7 @@ func TestGetAllURLs(t *testing.T) {
 	})
 
 	t.Run("Page is 0", func(t *testing.T) {
-		created := populateDB()
+		_ = populateDB()
 		urls, err := repo.GetAllURLs(models.ListOptions{
 			Page:  0,
 			Limit: 2,
@@ -281,13 +281,13 @@ func TestGetAllURLs(t *testing.T) {
 		if len(urls) != 2 {
 			t.Fatalf("expected 2 URLs, got %d", len(urls))
 		}
-		if urls[0].ID != created[4].ID || urls[1].ID != created[3].ID {
+		if urls[0].ID != 5 || urls[1].ID != 4 {
 			t.Fatalf("expected page 0 to default to page 1")
 		}
 	})
 
 	t.Run("Sorting", func(t *testing.T) {
-		created := populateDB()
+		_ = populateDB()
 
 		urls, err := repo.GetAllURLs(models.ListOptions{
 			Page:  1,
@@ -298,7 +298,7 @@ func TestGetAllURLs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed sorting created_at ASC: %v", err)
 		}
-		if urls[0].ID != created[0].ID || urls[4].ID != created[4].ID {
+		if urls[0].ID != 1 || urls[4].ID != 5 {
 			t.Fatalf("sorting by created_at ASC failed")
 		}
 
@@ -400,12 +400,12 @@ func TestGetAllURLs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed search: %v", err)
 		}
+		if len(urls) != 2 {
+			t.Fatalf("expected 2 URLs, got %d", len(urls))
+		}
 		if urls[0].ShortCode != "pqr" ||
 			urls[1].ShortCode != "mno" {
 			t.Fatal("unexpected urls")
-		}
-		if len(urls) != 2 {
-			t.Fatalf("expected 2 URLs, got %d", len(urls))
 		}
 	})
 
@@ -483,12 +483,12 @@ func TestGetAllURLs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to get min_clicks: %v", err)
 		}
+		if len(urls) != 2 {
+			t.Fatalf("expected 2 URLs, got %d", len(urls))
+		}
 		if urls[0].ShortCode != "xyz" ||
 			urls[1].ShortCode != "abc" {
 			t.Fatal("unexpected urls")
-		}
-		if len(urls) != 2 {
-			t.Fatalf("expected 2 URLs, got %d", len(urls))
 		}
 
 		// MaxClicks: 2 -> should return def (1), mno (0), pqr (0)
@@ -503,6 +503,9 @@ func TestGetAllURLs(t *testing.T) {
 		if len(urls) != 3 {
 			t.Fatalf("expected 3 URLs, got %d", len(urls))
 		}
+		if urls[0].ShortCode != "pqr" || urls[1].ShortCode != "mno" || urls[2].ShortCode != "def" {
+			t.Fatalf("unexpected urls, got %v", urls)
+		}
 
 		// MinClicks: 1, MaxClicks: 4 -> should return xyz (3) and def (1)
 		urls, err = repo.GetAllURLs(models.ListOptions{
@@ -514,18 +517,17 @@ func TestGetAllURLs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to get range: %v", err)
 		}
+		if len(urls) != 2 {
+			t.Fatalf("expected 2 URLs, got %d", len(urls))
+		}
 		if urls[0].ShortCode != "def" ||
 			urls[1].ShortCode != "xyz" {
 			t.Fatal("unexpected urls")
 		}
-		if len(urls) != 2 {
-			t.Fatalf("expected 2 URLs, got %d", len(urls))
-		}
 	})
 
 	t.Run("Date Range Filtering", func(t *testing.T) {
-		created := populateDB() // 5 URLs starting from baseTime (-10m) offset by 1m each
-		base := created[0].CreatedAt
+		base := populateDB()
 
 		// MinDate: baseTime + 90 seconds -> should return created[2] (baseTime + 2m), created[3] (baseTime + 3m), created[4] (baseTime + 4m)
 		urls, err := repo.GetAllURLs(models.ListOptions{
@@ -538,6 +540,9 @@ func TestGetAllURLs(t *testing.T) {
 		}
 		if len(urls) != 3 {
 			t.Fatalf("expected 3 URLs (MinDate), got %d", len(urls))
+		}
+		if urls[0].ShortCode != "pqr" || urls[1].ShortCode != "mno" || urls[2].ShortCode != "def" {
+			t.Fatalf("unexpected urls for MinDate, got %v", urls)
 		}
 
 		// MaxDate: baseTime + 150 seconds -> should return created[0], created[1], created[2] (since created[2] is +2m = 120s <= 150s)
@@ -552,6 +557,9 @@ func TestGetAllURLs(t *testing.T) {
 		if len(urls) != 3 {
 			t.Fatalf("expected 3 URLs (MaxDate), got %d", len(urls))
 		}
+		if urls[0].ShortCode != "def" || urls[1].ShortCode != "xyz" || urls[2].ShortCode != "abc" {
+			t.Fatalf("unexpected urls for MaxDate, got %v", urls)
+		}
 
 		// Range: baseTime + 90s to baseTime + 210s -> should return created[2] (baseTime + 2m = 120s) and created[3] (baseTime + 3m = 180s)
 		urls, err = repo.GetAllURLs(models.ListOptions{
@@ -563,12 +571,11 @@ func TestGetAllURLs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to get date range: %v", err)
 		}
-		if urls[0].ShortCode != "mno" ||
-			urls[1].ShortCode != "def" {
-			t.Fatal("unexpected urls")
-		}
 		if len(urls) != 2 {
 			t.Fatalf("expected 2 URLs (Range), got %d", len(urls))
+		}
+		if urls[0].ShortCode != "mno" || urls[1].ShortCode != "def" {
+			t.Fatalf("unexpected urls for Range, got %v", urls)
 		}
 	})
 }
