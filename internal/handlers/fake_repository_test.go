@@ -5,7 +5,7 @@ import "github.com/muhammedshamil8/url-shortener/internal/models"
 type FakeRepository struct {
 	GetURLByCodeFunc   func(string) (string, error)
 	DeleteURLFunc      func(int) error
-	GetAllURLsFunc     func() ([]models.URL, error)
+	GetAllURLsFunc     func(models.ListOptions) ([]models.URL, error)
 	HealthFunc         func() error
 	CreateShortURLFunc func(string, string) (int64, error)
 }
@@ -38,9 +38,9 @@ func (m *FakeRepository) DeleteURL(id int) error {
 	return nil
 }
 
-func (m *FakeRepository) GetAllURLs() ([]models.URL, error) {
+func (m *FakeRepository) GetAllURLs(opts models.ListOptions) ([]models.URL, error) {
 	if m.GetAllURLsFunc != nil {
-		return m.GetAllURLsFunc()
+		return m.GetAllURLsFunc(opts)
 	}
 	return []models.URL{}, nil
 }

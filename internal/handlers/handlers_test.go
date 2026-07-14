@@ -290,7 +290,7 @@ func TestListAllHandler(t *testing.T) {
 				"abc",
 			},
 			repo: &FakeRepository{
-				GetAllURLsFunc: func() ([]models.URL, error) {
+				GetAllURLsFunc: func(opts models.ListOptions) ([]models.URL, error) {
 					return []models.URL{
 						{
 							ID:          1,
@@ -309,7 +309,7 @@ func TestListAllHandler(t *testing.T) {
 			expectedStatus:   http.StatusInternalServerError,
 			expectedContains: []string{"Failed to get all urls"},
 			repo: &FakeRepository{
-				GetAllURLsFunc: func() ([]models.URL, error) {
+				GetAllURLsFunc: func(opts models.ListOptions) ([]models.URL, error) {
 					return nil, errors.New("database error")
 				},
 			},
