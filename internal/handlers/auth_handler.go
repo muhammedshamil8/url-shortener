@@ -99,3 +99,70 @@ func (h *Handler) LoginHandler(c *gin.Context) {
 	})
 
 }
+
+// Refresh godoc
+//
+//	@Summary		Refresh access token
+//	@Description	Refresh access token using a refresh token
+//	@Tags			Users
+//	@Param			request	body	models.RefreshRequest	true	"Request body"
+//	@Produce		json
+//	@Success		200	{object}	models.RefreshResponse
+//	@Failure		400	{object}	models.ErrorResponse
+//	@Failure		401	{object}	models.ErrorResponse
+//	@Failure		500	{object}	models.ErrorResponse
+//	@Router			/refresh [post]
+func (h *Handler) RefreshHandler(c *gin.Context) {
+	var req models.RefreshRequest
+	if err := c.BindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request body")
+		return
+	}
+
+	claims, err := auth.ValidateToken(req.RefreshToken, h.cfg.JWT.RefreshTokenSecret)
+	if err != nil {
+		response.Unauthorized(c, "Invalid or expired refresh token")
+		return
+	}
+
+	userIDVal, ok := claims["user_id"]
+	if !ok {
+		response.Unauthorized(c, "Invalid token claims")
+		return
+	}
+
+	var userID int
+	switch val := userIDVal.(type) {
+	case float64:
+		userID = int(val)
+	case int:
+		userID = val
+	default:
+		response.Unauthorized(c, "Invalid user ID claim type")
+		return
+	}
+
+	email, ok := claims["email"].(string)
+	if !ok {
+		response.Unauthorized(c, "Invalid email claim")
+		return
+	}
+
+	newAccessToken, err := auth.GenerateToken(userID, email, h.cfg.JWT.AccessTokenSecret, h.cfg.JWT.AccessTokenExpiry)
+	if err != nil {
+		response.InternalServerError(c, "Failed to generate access token")
+		return
+	}
+
+	newRefreshToken, err := auth.GenerateToken(userID, email, h.cfg.JWT.RefreshTokenSecret, h.cfg.JWT.RefreshTokenExpiry)
+	if err != nil {
+		response.InternalServerError(c, "Failed to generate refresh token")
+		return
+	}
+
+	response.OK(c, models.RefreshResponse{
+		AccessToken:  newAccessToken,
+		RefreshToken: newRefreshToken,
+	})
+}
+

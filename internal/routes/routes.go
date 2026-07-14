@@ -35,6 +35,7 @@ func Setup(r *gin.Engine, h *handlers.Handler, cfg *config.Config) {
 	{
 		auth.POST("/register", h.RegisterHandler)
 		auth.POST("/login", h.LoginHandler)
+		auth.POST("/refresh", h.RefreshHandler)
 	}
 
 	authRoutes := r.Group("/api/v1", jwtMiddleware)
