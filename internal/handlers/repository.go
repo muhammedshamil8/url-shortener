@@ -21,4 +21,6 @@ type UserRepository interface {
 	GetUserByEmail(email string) (*models.User, error)
 	GetAllURLsByUserEmail(email string) ([]models.URL, error)
 	DeleteUserURL(id int) error
+	GetAllUsers() ([]models.User, error)
+	DeleteUser(id int) error
 }

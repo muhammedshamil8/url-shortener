@@ -28,8 +28,6 @@ func Setup(r *gin.Engine, h *handlers.Handler, cfg *config.Config) {
 		api.GET("/ready", h.ReadyHandler)
 
 		api.POST("/shorten", h.ShortenHandler)
-		api.GET("/urls", h.ListAllHandler)
-		api.DELETE("/urls/:id", h.DeleteHandler)
 	}
 
 	auth := r.Group("/api/v1/auth")
@@ -44,5 +42,13 @@ func Setup(r *gin.Engine, h *handlers.Handler, cfg *config.Config) {
 		authRoutes.GET("/me", h.GetProfileHandler)
 		authRoutes.GET("/my/urls", h.ListUserURLs)
 		authRoutes.DELETE("/my/urls/:id", h.DeleteURL)
+	}
+
+	adminRoutes := r.Group("/api/v1/admin", jwtMiddleware, middleware.AdminOnly())
+	{
+		adminRoutes.GET("/urls", h.ListAllHandler)
+		adminRoutes.DELETE("/urls/:id", h.DeleteHandler)
+		adminRoutes.GET("/users", h.AdminListUsers)
+		adminRoutes.DELETE("/users/:id", h.AdminDeleteUser)
 	}
 }

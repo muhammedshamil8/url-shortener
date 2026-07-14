@@ -87,3 +87,50 @@ func (r *Repository) GetAllURLsByUserEmail(email string) ([]models.URL, error) {
 
 	return urls, nil
 }
+
+func (r *Repository) GetAllUsers() ([]models.User, error) {
+	rows, err := r.db.Query(
+		`SELECT id, username, email, created_at FROM users ORDER BY id ASC`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []models.User
+	for rows.Next() {
+		var u models.User
+		err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
+func (r *Repository) DeleteUser(id int) error {
+	result, err := r.db.Exec(
+		`DELETE FROM users WHERE id = $1`,
+		id,
+	)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
