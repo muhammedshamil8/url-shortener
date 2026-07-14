@@ -1,34 +1,51 @@
 # URL Shortener Service
 
-A production-style URL shortener built with Go and Gin.
+A production-style URL shortener built with **Go**, **Gin**, and **PostgreSQL**.
+
+The goal of this project is to learn how production backend services are designed, tested, documented, monitored, and deployed—not just to build a CRUD application.
+
+---
 
 ## Features
 
-### Version 1
-- [x] Create short URL
-- [x] Redirect to original URL
-- [x] List all URLs
-- [x] Delete URL
-- [x] Tests
+### Core API
+- Create short URLs
+- Redirect to original URLs
+- List all URLs
+- Delete URLs
+- Automatic click counting
+- URL validation
 
-### Version 2
-- [ ] User registration
-- [ ] Login
-- [ ] JWT authentication
-- [ ] User dashboard
+### Architecture
+- Clean project structure
+- Repository pattern
+- Dependency Injection
+- Interfaces
+- Configuration package
+- Standard API responses
 
-### Version 3
-- [ ] Custom aliases
-- [ ] Click analytics
-- [ ] URL expiration
-- [ ] QR code generation
+### Database
+- PostgreSQL
+- Automatic database migrations
 
-### Version 4
-- [ ] Rate limiting
-- [ ] Redis caching
-- [ ] Admin panel
-- [ ] Abuse reporting
-- [ ] Safe Browsing integration
+### Middleware
+- Request ID middleware
+- Structured request logging
+
+### Observability
+- Structured logging using `slog`
+- Swagger / OpenAPI documentation
+
+### Reliability
+- Graceful shutdown
+- Environment configuration
+
+### Testing
+- Unit tests
+- Mock repository
+- Handler tests
+- Repository integration tests
+- GitHub Actions CI
 
 ---
 
@@ -39,11 +56,10 @@ A production-style URL shortener built with Go and Gin.
 | Language | Go |
 | Framework | Gin |
 | Database | PostgreSQL |
-| Cache | Redis (later) |
-| Authentication | JWT |
-| Frontend | React |
-| Reverse Proxy | Nginx |
-| Deployment | Docker + Linux VPS |
+| Documentation | Swagger / OpenAPI |
+| Logging | slog |
+| Testing | Go Testing |
+| CI | GitHub Actions |
 
 ---
 
@@ -51,19 +67,40 @@ A production-style URL shortener built with Go and Gin.
 
 ```text
 url-shortener/
+├── docs/
+├── internal/
+│   ├── config/
+│   ├── database/
+│   ├── handlers/
+│   ├── logger/
+│   ├── middleware/
+│   ├── models/
+│   ├── repository/
+│   ├── response/
+│   └── utils/
+├── .github/
+│   └── workflows/
 ├── main.go
-├── handlers.go
-├── database.go
-├── models.go
-├── helpers.go
-├── .env
-├── .gitignore
+├── go.mod
 └── README.md
 ```
 
 ---
 
-## API
+## API Endpoints
+
+| Method | Endpoint | Description |
+|---------|----------|-------------|
+| GET | `/health/api` | Health check |
+| POST | `/shorten` | Create short URL |
+| GET | `/{code}` | Redirect to original URL |
+| GET | `/urls/all` | List all URLs |
+| DELETE | `/{id}` | Delete URL |
+| GET | `/swagger/index.html` | Swagger UI |
+
+---
+
+## Example
 
 ### Create Short URL
 
@@ -71,11 +108,9 @@ url-shortener/
 POST /shorten
 ```
 
-Request
-
 ```json
 {
-    "url": "https://www.boot.dev/certificates/2d34e01f-b7f8-4228-a854-deab3119f51a"
+  "url": "https://google.com"
 }
 ```
 
@@ -83,39 +118,82 @@ Response
 
 ```json
 {
-    "short_url": "https://shamilkp.me/Ab3KdP"
+  "status": "success",
+  "data": {
+    "id": 1,
+    "original_url": "https://google.com",
+    "short_code": "Ab3KdP",
+    "short_url": "http://localhost:8080/Ab3KdP"
+  },
+  "request_id": "f8f1c2..."
 }
 ```
 
 ---
 
-### Redirect
+## Development Roadmap
 
-```http
-GET /:code
-```
+### Phase 1 — Backend Foundations ✅
 
-Example
-
-```
-GET /Ab3KdP
-```
-
-Returns
-
-```
-302 Redirect
-```
+- Gin REST API
+- PostgreSQL
+- Repository Pattern
+- Dependency Injection
+- Interfaces
+- Unit & Integration Testing
+- Swagger Documentation
+- Structured Logging
+- Request ID Middleware
+- Standard API Responses
+- Graceful Shutdown
+- GitHub Actions CI
 
 ---
 
-## Roadmap
+### Phase 2 — Production Readiness 🚧
 
-- [ ] PostgreSQL integration
-- [ ] Redis caching
-- [ ] Authentication
-- [ ] Analytics
-- [ ] Docker
-- [ ] CI/CD
-- [ ] Deployment to shamilkp.me
-- [ ] HTTPS
+- Dockerfile
+- Docker Compose
+- Makefile
+- Rate Limiter
+- CORS Middleware
+- Request Validation Improvements
+- Environment Validation
+- Health Checks (`/live`, `/ready`)
+- Better Error Handling
+- Pagination
+- Sorting
+- Filtering
+
+---
+
+### Phase 3 — Scalability & Security
+
+- Redis
+- Response Caching
+- User Management
+- JWT Authentication
+- Refresh Tokens
+- Role-Based Access Control (RBAC)
+- Prometheus Metrics
+- OpenTelemetry Tracing
+- CI/CD Improvements
+- Production Deployment
+
+---
+
+## Learning Objectives
+
+This project is being built to practice:
+
+- Production Go project structure
+- REST API development
+- PostgreSQL
+- Middleware design
+- Repository pattern
+- Dependency Injection
+- Testing strategies
+- API documentation
+- Observability
+- Production engineering
+- Deployment workflows
