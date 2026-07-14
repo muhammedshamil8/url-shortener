@@ -1,199 +1,168 @@
-# URL Shortener Service
+# 🔗 URL Shortener Service
 
-A production-style URL shortener built with **Go**, **Gin**, and **PostgreSQL**.
+[![Go Version](https://img.shields.io/github/go-mod/go-version/muhammedshamil8/url-shortener?color=00ADD8&style=flat-square)](https://golang.org)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/muhammedshamil8/url-shortener/go-tests.yml?branch=dev&style=flat-square)](https://github.com/muhammedshamil8/url-shortener/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/muhammedshamil8/url-shortener?style=flat-square)](https://goreportcard.com/report/github.com/muhammedshamil8/url-shortener)
 
-The goal of this project is to learn how production backend services are designed, tested, documented, monitored, and deployed—not just to build a CRUD application.
+A production-ready, high-performance URL shortener built with **Go**, **Gin**, and **PostgreSQL**.
 
----
-
-## Features
-
-### Core API
-- Create short URLs
-- Redirect to original URLs
-- List all URLs
-- Delete URLs
-- Automatic click counting
-- URL validation
-
-### Architecture
-- Clean project structure
-- Repository pattern
-- Dependency Injection
-- Interfaces
-- Configuration package
-- Standard API responses
-
-### Database
-- PostgreSQL
-- Automatic database migrations
-
-### Middleware
-- Request ID middleware
-- Structured request logging
-
-### Observability
-- Structured logging using `slog`
-- Swagger / OpenAPI documentation
-
-### Reliability
-- Graceful shutdown
-- Environment configuration
-
-### Testing
-- Unit tests
-- Mock repository
-- Handler tests
-- Repository integration tests
-- GitHub Actions CI
+This service demonstrates production-grade Go backend architecture, featuring dependency injection, robust middlewares, comprehensive unit/integration test suites, dynamic pagination/filtering, containerization, and automated CI pipelines.
 
 ---
 
-## Tech Stack
+## 🚀 Key Features
 
-| Layer | Technology |
-|--------|------------|
-| Language | Go |
-| Framework | Gin |
-| Database | PostgreSQL |
-| Documentation | Swagger / OpenAPI |
-| Logging | slog |
-| Testing | Go Testing |
-| CI | GitHub Actions |
+* **⚡ Core API**: URL shortening, click tracking, custom error responses, and redirects.
+* **🔍 Search & Filter**: Case-insensitive filtering on original URLs or short codes.
+* **📊 Click & Date Bounds**: Retrieve URLs filtered by click ranges (`min_clicks`, `max_clicks`) and creation dates (`min_date`, `max_date`).
+* **📦 Architecture**: Clean architecture with the Repository pattern, interfaces, and strict Dependency Injection.
+* **🛡️ Security & Reliability**: IP-based rate limiting, CORS configuration, environment validation, and graceful server shutdown.
+* **🩺 Health Probes**: Live (`/live`) and database-connected Ready (`/ready`) endpoints.
+* **📖 Documentation**: Interactive API documentation generated with Swagger UI.
+* **🧪 Testing**: 70%+ test coverage with mock repositories, controller unit tests, and database integration tests.
 
 ---
 
-## Project Structure
+## 🛠️ Tech Stack
+
+| Layer | Technology | Description |
+| :--- | :--- | :--- |
+| **Language** | Go 1.26 | High-performance compiled backend language |
+| **Web Framework** | Gin | Minimalist, fast HTTP router and middleware engine |
+| **Database** | PostgreSQL 16 | Relational database storage with auto migrations |
+| **API Docs** | Swagger | Auto-generated OpenAPI 2.0 specifications |
+| **Logging** | slog | Structured, leveled logging in JSON format |
+| **CI** | GitHub Actions | Automated lint, vet, and test checks |
+
+---
+
+## 📁 Project Structure
 
 ```text
 url-shortener/
-├── docs/
+├── docs/                   # Auto-generated Swagger spec files
 ├── internal/
-│   ├── config/
-│   ├── database/
-│   ├── handlers/
-│   ├── logger/
-│   ├── middleware/
-│   ├── models/
-│   ├── repository/
-│   ├── response/
-│   └── utils/
+│   ├── config/             # Environment validation and parsing
+│   ├── database/           # Postgres initialization and migrations
+│   ├── handlers/           # HTTP controllers and routing handlers
+│   ├── logger/             # Structured slog logger integration
+│   ├── middleware/         # Rate limiter, CORS, request logging, and UUID tracking
+│   ├── models/             # Shared entities and filtering ListOptions
+│   ├── repository/         # Postgres queries and database layer
+│   ├── response/           # Consistent, unified JSON response payloads
+│   └── utils/              # Helper functions (e.g., URL validation, shortcode generators)
 ├── .github/
-│   └── workflows/
-├── main.go
-├── go.mod
-└── README.md
+│   └── workflows/          # GitHub Actions CI workflow files
+├── Makefile                # Shorthand CLI automation
+├── docker-compose.yml      # Multi-container orchestration config
+├── Dockerfile              # Multi-stage optimized builder image
+└── main.go                 # Application bootstrap entrypoint
 ```
 
 ---
 
-## API Endpoints
+## ⚙️ Getting Started
 
-| Method | Endpoint | Description |
-|---------|----------|-------------|
-| GET | `/health/api` | Health check |
-| POST | `/shorten` | Create short URL |
-| GET | `/{code}` | Redirect to original URL |
-| GET | `/urls/all` | List all URLs |
-| DELETE | `/{id}` | Delete URL |
-| GET | `/swagger/index.html` | Swagger UI |
+### Prerequisites
+* [Go 1.26+](https://golang.org/dl/)
+* [PostgreSQL 16](https://www.postgresql.org/) OR [Docker](https://www.docker.com/)
+
+### Running with Docker (Recommended)
+Spin up the service and a database instance instantly:
+```bash
+docker-compose up --build
+```
+The API will be available at `http://localhost:8080`.
+
+### Running Locally
+1. Clone the repository and configure your environment:
+   ```bash
+   cp .env.example .env
+   ```
+   *(Update your DB connection details in `.env`)*
+
+2. Run the application:
+   ```bash
+   make run
+   ```
+
+3. Run the test suite:
+   ```bash
+   make test
+   ```
 
 ---
 
-## Example
+## 📡 API Reference
 
-### Create Short URL
+### Health check & Docs
+* `GET /live` — Liveness probe (always returns 200)
+* `GET /ready` — Readiness probe (pings database connection)
+* `GET /swagger/index.html` — Swagger UI documentation
 
-```http
-POST /shorten
-```
+### Shorten URL
+* `POST /shorten`
+  * **Payload:**
+    ```json
+    {
+      "url": "https://github.com/muhammedshamil8/url-shortener"
+    }
+    ```
+  * **Response (201):**
+    ```json
+    {
+      "status": "success",
+      "data": {
+        "id": 1,
+        "original_url": "https://github.com/muhammedshamil8/url-shortener",
+        "short_code": "xY7z9P",
+        "short_url": "http://localhost:8080/xY7z9P"
+      },
+      "request_id": "8e3c1a-..."
+    }
+    ```
 
-```json
-{
-  "url": "https://google.com"
-}
-```
+### Redirect
+* `GET /{code}` — Redirects with a `302 Found` header to the original URL and increments click counts.
 
-Response
+### Delete URL
+* `DELETE /{id}` — Deletes URL matching the database primary ID.
 
-```json
-{
-  "status": "success",
-  "data": {
-    "id": 1,
-    "original_url": "https://google.com",
-    "short_code": "Ab3KdP",
-    "short_url": "http://localhost:8080/Ab3KdP"
-  },
-  "request_id": "f8f1c2..."
-}
-```
+### List All URLs (Paginated & Filtered)
+* `GET /urls/all`
+  * **Query Parameters:**
+    | Parameter | Type | Default | Description |
+    | :--- | :--- | :--- | :--- |
+    | `page` | `int` | `1` | Page number |
+    | `limit` | `int` | `20` | Results per page (Max: `100`) |
+    | `sort` | `string` | `created_at` | Sort key (`created_at`, `click_count`, `short_code`) |
+    | `order` | `string` | `DESC` | Sort direction (`ASC`, `DESC`) |
+    | `search` | `string` | `""` | Case-insensitive search on URLs and short codes |
+    | `min_clicks`| `int` | `""` | Filter URLs with clicks `>= min_clicks` |
+    | `max_clicks`| `int` | `""` | Filter URLs with clicks `<= max_clicks` |
+    | `min_date` | `string` | `""` | RFC3339 formatted start date threshold |
+    | `max_date` | `string` | `""` | RFC3339 formatted end date threshold |
 
 ---
 
-## Development Roadmap
+## 📈 Development Roadmap
 
 ### Phase 1 — Backend Foundations ✅
+* Gin HTTP routing engine
+* PostgreSQL Repository pattern with migrations
+* Dependency Injection & Interfaces
+* Graceful server shutdown & CORS middleware
+* OpenAPI/Swagger docs UI
 
-- Gin REST API
-- PostgreSQL
-- Repository Pattern
-- Dependency Injection
-- Interfaces
-- Unit & Integration Testing
-- Swagger Documentation
-- Structured Logging
-- Request ID Middleware
-- Standard API Responses
-- Graceful Shutdown
-- GitHub Actions CI
+### Phase 2 — Production Readiness ✅
+* Multi-stage Docker containerization
+* Makefile scripting for local workflows
+* IP Rate limiting middleware
+* Dynamic pagination, sorting, and filter bounds (click counts, dates, and search queries)
+* Liveness `/live` and readiness `/ready` probes
 
----
-
-### Phase 2 — Production Readiness 🚧
-
-- Dockerfile
-- Docker Compose
-- Makefile
-- Rate Limiter
-- CORS Middleware
-- Request Validation Improvements
-- Environment Validation
-- Health Checks (`/live`, `/ready`)
-- Better Error Handling
-- Pagination
-- Sorting
-- Filtering
-
----
-
-### Phase 3 — Scalability & Security
-
-- Redis
-- Response Caching
-- User Management
-- JWT Authentication
-- Refresh Tokens
-- Role-Based Access Control (RBAC)
-- Prometheus Metrics
-- OpenTelemetry Tracing
-- CI/CD Improvements
-- Production Deployment
-
----
-
-## Learning Objectives
-
-This project is being built to practice:
-
-- Production Go project structure
-- REST API development
-- PostgreSQL
-- Middleware design
-- Repository pattern
-- Dependency Injection
-- Testing strategies
-- API documentation
-- Observability
-- Production engineering
-- Deployment workflows
+### Phase 3 — Scalability & Security 🚧
+* Redis response caching layer
+* JWT session-based Authentication
+* Prometheus metrics exports
+* OpenTelemetry tracing instrumentation
