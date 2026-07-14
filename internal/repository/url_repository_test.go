@@ -189,6 +189,9 @@ func TestGetAllURLs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to get page 1: %v", err)
 		}
+		if urls[0].ShortCode != "pqr" || urls[1].ShortCode != "mno" {
+			t.Fatal("unexpected urls")
+		}
 		if len(urls) != 2 {
 			t.Fatalf("expected 2 URLs, got %d", len(urls))
 		}
@@ -271,6 +274,9 @@ func TestGetAllURLs(t *testing.T) {
 		})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
+		}
+		if urls[0].ShortCode != "pqr" || urls[1].ShortCode != "mno" {
+			t.Fatal("unexpected urls")
 		}
 		if len(urls) != 2 {
 			t.Fatalf("expected 2 URLs, got %d", len(urls))
@@ -394,6 +400,10 @@ func TestGetAllURLs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed search: %v", err)
 		}
+		if urls[0].ShortCode != "pqr" ||
+			urls[1].ShortCode != "mno" {
+			t.Fatal("unexpected urls")
+		}
 		if len(urls) != 2 {
 			t.Fatalf("expected 2 URLs, got %d", len(urls))
 		}
@@ -404,10 +414,26 @@ func TestGetAllURLs(t *testing.T) {
 		search   string
 		expected int
 	}{
-		{"Search URL", "google", 1},
-		{"Search URL (case insensitive)", "GOOGLE", 1},
-		{"Search Code", "abc", 1},
-		{"Search Missing", "nothing", 0},
+		{
+			"Search by URL",
+			"google",
+			1,
+		},
+		{
+			"Search by URL (case insensitive)",
+			"GOOGLE",
+			1,
+		},
+		{
+			"Search by Short Code",
+			"abc",
+			1,
+		},
+		{
+			"Search No Results",
+			"nothing",
+			0,
+		},
 	}
 
 	for _, test := range tests {
@@ -457,6 +483,10 @@ func TestGetAllURLs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to get min_clicks: %v", err)
 		}
+		if urls[0].ShortCode != "xyz" ||
+			urls[1].ShortCode != "abc" {
+			t.Fatal("unexpected urls")
+		}
 		if len(urls) != 2 {
 			t.Fatalf("expected 2 URLs, got %d", len(urls))
 		}
@@ -484,6 +514,10 @@ func TestGetAllURLs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to get range: %v", err)
 		}
+		if urls[0].ShortCode != "def" ||
+			urls[1].ShortCode != "xyz" {
+			t.Fatal("unexpected urls")
+		}
 		if len(urls) != 2 {
 			t.Fatalf("expected 2 URLs, got %d", len(urls))
 		}
@@ -491,13 +525,13 @@ func TestGetAllURLs(t *testing.T) {
 
 	t.Run("Date Range Filtering", func(t *testing.T) {
 		created := populateDB() // 5 URLs starting from baseTime (-10m) offset by 1m each
-		baseTime := created[0].CreatedAt
+		base := created[0].CreatedAt
 
 		// MinDate: baseTime + 90 seconds -> should return created[2] (baseTime + 2m), created[3] (baseTime + 3m), created[4] (baseTime + 4m)
 		urls, err := repo.GetAllURLs(models.ListOptions{
 			Page:    1,
 			Limit:   10,
-			MinDate: baseTime.Add(90 * time.Second),
+			MinDate: base.Add(90 * time.Second),
 		})
 		if err != nil {
 			t.Fatalf("failed to get min_date: %v", err)
@@ -510,7 +544,7 @@ func TestGetAllURLs(t *testing.T) {
 		urls, err = repo.GetAllURLs(models.ListOptions{
 			Page:    1,
 			Limit:   10,
-			MaxDate: baseTime.Add(150 * time.Second),
+			MaxDate: base.Add(150 * time.Second),
 		})
 		if err != nil {
 			t.Fatalf("failed to get max_date: %v", err)
@@ -523,11 +557,15 @@ func TestGetAllURLs(t *testing.T) {
 		urls, err = repo.GetAllURLs(models.ListOptions{
 			Page:    1,
 			Limit:   10,
-			MinDate: baseTime.Add(90 * time.Second),
-			MaxDate: baseTime.Add(210 * time.Second),
+			MinDate: base.Add(90 * time.Second),
+			MaxDate: base.Add(210 * time.Second),
 		})
 		if err != nil {
 			t.Fatalf("failed to get date range: %v", err)
+		}
+		if urls[0].ShortCode != "mno" ||
+			urls[1].ShortCode != "def" {
+			t.Fatal("unexpected urls")
 		}
 		if len(urls) != 2 {
 			t.Fatalf("expected 2 URLs (Range), got %d", len(urls))
