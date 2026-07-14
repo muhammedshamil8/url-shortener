@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/muhammedshamil8/url-shortener/internal/logger"
+	"github.com/muhammedshamil8/url-shortener/internal/response"
 )
 
 func Logger() gin.HandlerFunc {
@@ -12,7 +13,7 @@ func Logger() gin.HandlerFunc {
 		start := time.Now()
 
 		c.Next()
-		requestID := c.GetString(RequestIDKey)
+		requestID := c.GetString(response.RequestIDKey)
 		logger.Log.Info(
 			"request",
 			"request_id", requestID,

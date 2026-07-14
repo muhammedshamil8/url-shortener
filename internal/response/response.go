@@ -4,14 +4,15 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/muhammedshamil8/url-shortener/internal/middleware"
 )
+
+const RequestIDKey = "request_id"
 
 func Success(c *gin.Context, status int, data any) {
 	c.JSON(status, gin.H{
 		"status":     "success",
 		"data":       data,
-		"request_id": c.GetString(middleware.RequestIDKey),
+		"request_id": c.GetString(RequestIDKey),
 	})
 }
 
@@ -19,7 +20,7 @@ func Error(c *gin.Context, status int, message string) {
 	c.JSON(status, gin.H{
 		"status":     "error",
 		"message":    message,
-		"request_id": c.GetString(middleware.RequestIDKey),
+		"request_id": c.GetString(RequestIDKey),
 	})
 }
 

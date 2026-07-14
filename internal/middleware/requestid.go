@@ -3,10 +3,10 @@ package middleware
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/muhammedshamil8/url-shortener/internal/response"
 )
 
 const (
-	RequestIDKey    = "request_id"
 	RequestIDHeader = "X-Request-ID"
 )
 
@@ -18,7 +18,7 @@ func RequestID() gin.HandlerFunc {
 			rid = uuid.NewString()
 		}
 
-		c.Set(RequestIDKey, rid)
+		c.Set(response.RequestIDKey, rid)
 		c.Writer.Header().Set(RequestIDHeader, rid)
 
 		c.Next()
