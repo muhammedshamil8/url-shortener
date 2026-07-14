@@ -14,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	_ "github.com/muhammedshamil8/url-shortener/docs"
 	"github.com/muhammedshamil8/url-shortener/internal/config"
 	"github.com/muhammedshamil8/url-shortener/internal/database"
 	"github.com/muhammedshamil8/url-shortener/internal/handlers"
@@ -21,7 +22,6 @@ import (
 	"github.com/muhammedshamil8/url-shortener/internal/repository"
 	"github.com/muhammedshamil8/url-shortener/internal/routes"
 	"github.com/muhammedshamil8/url-shortener/internal/server"
-	_ "github.com/muhammedshamil8/url-shortener/docs"
 )
 
 func main() {
@@ -65,8 +65,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	routes.Setup(r, h)
-
+	routes.Setup(r, h, cfg)
 
 	logger.Log.Info("Server running on port " + cfg.Server.Port)
 	srv := server.New(cfg, r)
