@@ -11,9 +11,9 @@ const (
 )
 
 func ValidateURL(rawURL string) error {
-	u, err := url.Parse(rawURL)
+	u, err := url.ParseRequestURI(rawURL)
 	if err != nil {
-		return err
+		return errors.New("invalid url")
 	}
 	if u.Scheme != HTTP && u.Scheme != HTTPS {
 		return errors.New("invalid url scheme")

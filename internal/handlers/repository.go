@@ -6,7 +6,7 @@ type URLRepository interface {
 	CreateShortURL(shortCode, url string) (int64, error)
 	GetURLByCode(code string) (string, error)
 	DeleteURL(id int) error
-	GetAllURLs() ([]models.URL, error)
+	GetAllURLs(opts models.ListOptions) ([]models.URL, error)
 
 	Health() error
 }

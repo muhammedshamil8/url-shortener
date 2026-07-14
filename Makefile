@@ -12,6 +12,12 @@ build:
 test:
 	go test ./...
 
+test-coverage:
+	go test -coverprofile=coverage.out ./...
+
+test-coverprofile:
+	go tool cover -html=coverage.out && brave-browser http://localhost:8080/coverage/index.html
+
 fmt:
 	go fmt ./...
 

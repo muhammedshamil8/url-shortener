@@ -60,10 +60,41 @@ func (r *Repository) DeleteURL(id int) error {
 	}
 	return nil
 }
-
-func (r *Repository) GetAllURLs() ([]models.URL, error) {
+func (r *Repository) GetAllURLs(opts models.ListOptions) ([]models.URL, error) {
 	var urls []models.URL
-	rows, err := r.db.Query("SELECT id, short_code, original_url, created_at, click_count FROM urls")
+
+	opts.Normalize()
+
+	query := "SELECT id, short_code, original_url, created_at, click_count FROM urls"
+
+	sortColumn := "created_at"
+	switch opts.Sort {
+	case "created_at":
+		sortColumn = "created_at"
+	case "click_count":
+		sortColumn = "click_count"
+	case "short_code":
+		sortColumn = "short_code"
+	default:
+		sortColumn = "created_at"
+	}
+
+	orderDirection := "DESC"
+	switch opts.Order {
+	case "ASC":
+		orderDirection = "ASC"
+	case "DESC":
+		orderDirection = "DESC"
+	default:
+		orderDirection = "DESC"
+	}
+
+	query += " ORDER BY " + sortColumn + " " + orderDirection
+
+	offset := (opts.Page - 1) * opts.Limit
+	query += " LIMIT $1 OFFSET $2"
+
+	rows, err := r.db.Query(query, opts.Limit, offset)
 	if err != nil {
 		logger.Log.Error("Error getting urls from database", "error", err)
 		return nil, err

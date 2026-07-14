@@ -154,7 +154,12 @@ func (h *Handler) DeleteHandler(c *gin.Context) {
 //	@Failure	500	{object}	models.ErrorResponse
 //	@Router	/urls/all [get]
 func (h *Handler) ListAllHandler(c *gin.Context) {
-	urls, err := h.repo.GetAllURLs()
+	var opts models.ListOptions
+	if err := c.ShouldBindQuery(&opts); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid query parameters")
+		return
+	}
+	urls, err := h.repo.GetAllURLs(opts)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Failed to get all urls")
 		return

@@ -25,3 +25,20 @@ type ErrorResponse struct {
 	Message   string `json:"message" example:"Invalid URL"`
 	RequestID string `json:"request_id" example:"550e8400-e29b-41d4-a716-446655440000"`
 }
+
+type ListOptions struct {
+	Page   int
+	Limit  int
+	Sort   string
+	Order  string
+	Search string
+}
+
+func (o *ListOptions) Normalize() {
+	if o.Page < 1 {
+		o.Page = 1
+	}
+	if o.Limit < 1 || o.Limit > 100 {
+		o.Limit = 20
+	}
+}
