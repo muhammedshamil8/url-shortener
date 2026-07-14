@@ -117,19 +117,536 @@ func TestDeleteURL(t *testing.T) {
 			t.Log("Deleted short URL with ID:", id)
 		}
 	}
+}func TestGetAllURLs(t *testing.T) {
+	repo := setupTestDB(t)
+
+	resetDB := func() {
+		_, err := repo.db.Exec("TRUNCATE TABLE urls RESTART IDENTITY")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	populateDB := func() []models.URL {
+		resetDB()
+		data := []struct {
+			code string
+			url  string
+		}{
+			{"abc", "https://google.com"},
+			{"xyz", "https://github.com"},
+			{"def", "https://golang.org"},
+			{"mno", "https://apple.com"},
+			{"pqr", "https://microsoft.com"},
+		}
+
+		created := make([]models.URL, 0, len(data))
+		baseTime := time.Now().Add(-10 * time.Minute)
+		for idx, item := range data {
+			id, err := repo.CreateShortURL(item.code, item.url)
+			if err != nil {
+				t.Fatalf("failed to seed url: %v", err)
+			}
+			customTime := baseTime.Add(time.Duration(idx) * time.Minute)
+			_, err = repo.db.Exec("UPDATE urls SET created_at = $1 WHERE id = $2", customTime, id)
+			if err != nil {
+				t.Fatalf("failed to update created_at: %v", err)
+			}
+			var url models.URL
+			err = repo.db.QueryRow("SELECT id, short_code, original_url, created_at, click_count FROM urls WHERE id = $1", id).
+				Scan(&url.ID, &url.ShortCode, &url.OriginalURL, &url.CreatedAt, &url.ClickCount)
+			if err != nil {
+				t.Fatalf("failed to query seeded url: %v", err)
+			}
+			created = append(created, url)
+		}
+		return created
+	}
+
+	t.Run("Empty Table", func(t *testing.T) {
+		resetDB()
+		urls, err := repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 10,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error on empty table: %v", err)
+		}
+		if len(urls) != 0 {
+			t.Fatalf("expected 0 URLs, got %d", len(urls))
+		}
+	})
+
+	t.Run("Pagination and Limits", func(t *testing.T) {
+		created := populateDB()
+
+		urls, err := repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 2,
+		})
+		if err != nil {
+			t.Fatalf("failed to get page 1: %v", err)
+		}
+		if len(urls) != 2 {
+			t.Fatalf("expected 2 URLs, got %d", len(urls))
+		}
+		if urls[0].ID != created[4].ID || urls[1].ID != created[3].ID {
+			t.Fatalf("unexpected pagination results on page 1")
+		}
+
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:  2,
+			Limit: 2,
+		})
+		if err != nil {
+			t.Fatalf("failed to get page 2: %v", err)
+		}
+		if len(urls) != 2 {
+			t.Fatalf("expected 2 URLs, got %d", len(urls))
+		}
+		if urls[0].ID != created[2].ID || urls[1].ID != created[1].ID {
+			t.Fatalf("unexpected pagination results on page 2")
+		}
+
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:  3,
+			Limit: 2,
+		})
+		if err != nil {
+			t.Fatalf("failed to get page 3: %v", err)
+		}
+		if len(urls) != 1 {
+			t.Fatalf("expected 1 URL on page 3, got %d", len(urls))
+		}
+		if urls[0].ID != created[0].ID {
+			t.Fatalf("unexpected pagination results on page 3")
+		}
+
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:  4,
+			Limit: 2,
+		})
+		if err != nil {
+			t.Fatalf("failed to get page 4: %v", err)
+		}
+		if len(urls) != 0 {
+			t.Fatalf("expected 0 URLs on page 4, got %d", len(urls))
+		}
+	})
+
+	t.Run("Limit Validation", func(t *testing.T) {
+		populateDB()
+		// Limit 0 should default to 20
+		urls, err := repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 0,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(urls) != 5 {
+			t.Fatalf("expected 5 URLs, got %d", len(urls))
+		}
+
+		// Limit 500 should default to 20
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 500,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(urls) != 5 {
+			t.Fatalf("expected 5 URLs, got %d", len(urls))
+		}
+	})
+
+	t.Run("Page is 0", func(t *testing.T) {
+		created := populateDB()
+		urls, err := repo.GetAllURLs(models.ListOptions{
+			Page:  0,
+			Limit: 2,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(urls) != 2 {
+			t.Fatalf("expected 2 URLs, got %d", len(urls))
+		}
+		if urls[0].ID != created[4].ID || urls[1].ID != created[3].ID {
+			t.Fatalf("expected page 0 to default to page 1")
+		}
+	})
+
+	t.Run("Sorting", func(t *testing.T) {
+		created := populateDB()
+
+		urls, err := repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 5,
+			Sort:  "created_at",
+			Order: "ASC",
+		})
+		if err != nil {
+			t.Fatalf("failed sorting created_at ASC: %v", err)
+		}
+		if urls[0].ID != created[0].ID || urls[4].ID != created[4].ID {
+			t.Fatalf("sorting by created_at ASC failed")
+		}
+
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 5,
+			Sort:  "short_code",
+			Order: "ASC",
+		})
+		if err != nil {
+			t.Fatalf("failed sorting short_code ASC: %v", err)
+		}
+		if urls[0].ShortCode != "abc" || urls[1].ShortCode != "def" || urls[4].ShortCode != "xyz" {
+			t.Fatalf("sorting by short_code ASC failed: first=%s, second=%s, last=%s", urls[0].ShortCode, urls[1].ShortCode, urls[4].ShortCode)
+		}
+
+		_, err = repo.GetURLByCode("def")
+		if err != nil {
+			t.Fatalf("failed to increment click count: %v", err)
+		}
+
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 5,
+			Sort:  "click_count",
+			Order: "DESC",
+		})
+		if err != nil {
+			t.Fatalf("failed sorting click_count DESC: %v", err)
+		}
+		if urls[0].ShortCode != "def" {
+			t.Fatalf("expected def to be first in click_count DESC, got %s", urls[0].ShortCode)
+		}
+	})
+
+	t.Run("Invalid Sort/Order/Search Validation", func(t *testing.T) {
+		populateDB()
+
+		urls, err := repo.GetAllURLs(models.ListOptions{
+			Page:   1,
+			Limit:  5,
+			Sort:   "invalid_column_name",
+			Order:  "INVALID_DIR",
+			Search: "some search string",
+		})
+		if err != nil {
+			t.Fatalf("failed invalid sort/order validation: %v", err)
+		}
+		if len(urls) != 5 {
+			t.Fatalf("expected 5 URLs, got %d", len(urls))
+		}
+	})
+
+	t.Run("SQL Injection Protection", func(t *testing.T) {
+		populateDB()
+
+		urls, err := repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 5,
+			Sort:  "id; DROP TABLE urls; --",
+			Order: "ASC",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error on SQL injection test for Sort: %v", err)
+		}
+		if len(urls) != 5 {
+			t.Fatalf("expected 5 URLs, got %d", len(urls))
+		}
+
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 5,
+			Sort:  "created_at",
+			Order: "ASC; DROP TABLE urls; --",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error on SQL injection test for Order: %v", err)
+		}
+		if len(urls) != 5 {
+			t.Fatalf("expected 5 URLs, got %d", len(urls))
+		}
+
+		var count int
+		err = repo.db.QueryRow("SELECT COUNT(*) FROM urls").Scan(&count)
+		if err != nil {
+			t.Fatalf("failed to query urls count (table might have been dropped): %v", err)
+		}
+		if count != 5 {
+			t.Fatalf("expected 5 URLs to still exist, got %d", count)
+		}
+	})
 }
 
 func TestGetAllURLs(t *testing.T) {
 	repo := setupTestDB(t)
-	repo.CreateShortURL("abc", "https://google.com")
-	repo.CreateShortURL("xyz", "https://github.com")
-	repo.CreateShortURL("def", "https://golang.org")
 
-	urls, err := repo.GetAllURLs()
-	if err != nil {
-		t.Fatalf("failed to get all URLs: %v", err)
+	resetDB := func() {
+		_, err := repo.db.Exec("TRUNCATE TABLE urls RESTART IDENTITY")
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
-	if len(urls) != 3 {
-		t.Fatalf("expected 3 URLs, got %d", len(urls))
+
+	populateDB := func() []models.URL {
+		resetDB()
+		data := []struct {
+			code string
+			url  string
+		}{
+			{"abc", "https://google.com"},
+			{"xyz", "https://github.com"},
+			{"def", "https://golang.org"},
+			{"mno", "https://apple.com"},
+			{"pqr", "https://microsoft.com"},
+		}
+
+		created := make([]models.URL, 0, len(data))
+		baseTime := time.Now().Add(-10 * time.Minute)
+		for idx, item := range data {
+			id, err := repo.CreateShortURL(item.code, item.url)
+			if err != nil {
+				t.Fatalf("failed to seed url: %v", err)
+			}
+			customTime := baseTime.Add(time.Duration(idx) * time.Minute)
+			_, err = repo.db.Exec("UPDATE urls SET created_at = $1 WHERE id = $2", customTime, id)
+			if err != nil {
+				t.Fatalf("failed to update created_at: %v", err)
+			}
+			var url models.URL
+			err = repo.db.QueryRow("SELECT id, short_code, original_url, created_at, click_count FROM urls WHERE id = $1", id).
+				Scan(&url.ID, &url.ShortCode, &url.OriginalURL, &url.CreatedAt, &url.ClickCount)
+			if err != nil {
+				t.Fatalf("failed to query seeded url: %v", err)
+			}
+			created = append(created, url)
+		}
+		return created
 	}
+
+	t.Run("Empty Table", func(t *testing.T) {
+		resetDB()
+		urls, err := repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 10,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error on empty table: %v", err)
+		}
+		if len(urls) != 0 {
+			t.Fatalf("expected 0 URLs, got %d", len(urls))
+		}
+	})
+
+	t.Run("Pagination and Limits", func(t *testing.T) {
+		created := populateDB()
+
+		urls, err := repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 2,
+		})
+		if err != nil {
+			t.Fatalf("failed to get page 1: %v", err)
+		}
+		if len(urls) != 2 {
+			t.Fatalf("expected 2 URLs, got %d", len(urls))
+		}
+		if urls[0].ID != created[4].ID || urls[1].ID != created[3].ID {
+			t.Fatalf("unexpected pagination results on page 1")
+		}
+
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:  2,
+			Limit: 2,
+		})
+		if err != nil {
+			t.Fatalf("failed to get page 2: %v", err)
+		}
+		if len(urls) != 2 {
+			t.Fatalf("expected 2 URLs, got %d", len(urls))
+		}
+		if urls[0].ID != created[2].ID || urls[1].ID != created[1].ID {
+			t.Fatalf("unexpected pagination results on page 2")
+		}
+
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:  3,
+			Limit: 2,
+		})
+		if err != nil {
+			t.Fatalf("failed to get page 3: %v", err)
+		}
+		if len(urls) != 1 {
+			t.Fatalf("expected 1 URL on page 3, got %d", len(urls))
+		}
+		if urls[0].ID != created[0].ID {
+			t.Fatalf("unexpected pagination results on page 3")
+		}
+
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:  4,
+			Limit: 2,
+		})
+		if err != nil {
+			t.Fatalf("failed to get page 4: %v", err)
+		}
+		if len(urls) != 0 {
+			t.Fatalf("expected 0 URLs on page 4, got %d", len(urls))
+		}
+	})
+
+	t.Run("Limit Validation", func(t *testing.T) {
+		populateDB()
+		// Limit 0 should default to 20
+		urls, err := repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 0,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(urls) != 5 {
+			t.Fatalf("expected 5 URLs, got %d", len(urls))
+		}
+
+		// Limit 500 should default to 20
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 500,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(urls) != 5 {
+			t.Fatalf("expected 5 URLs, got %d", len(urls))
+		}
+	})
+
+	t.Run("Page is 0", func(t *testing.T) {
+		created := populateDB()
+		urls, err := repo.GetAllURLs(models.ListOptions{
+			Page:  0,
+			Limit: 2,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(urls) != 2 {
+			t.Fatalf("expected 2 URLs, got %d", len(urls))
+		}
+		if urls[0].ID != created[4].ID || urls[1].ID != created[3].ID {
+			t.Fatalf("expected page 0 to default to page 1")
+		}
+	})
+
+	t.Run("Sorting", func(t *testing.T) {
+		created := populateDB()
+
+		urls, err := repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 5,
+			Sort:  "created_at",
+			Order: "ASC",
+		})
+		if err != nil {
+			t.Fatalf("failed sorting created_at ASC: %v", err)
+		}
+		if urls[0].ID != created[0].ID || urls[4].ID != created[4].ID {
+			t.Fatalf("sorting by created_at ASC failed")
+		}
+
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 5,
+			Sort:  "short_code",
+			Order: "ASC",
+		})
+		if err != nil {
+			t.Fatalf("failed sorting short_code ASC: %v", err)
+		}
+		if urls[0].ShortCode != "abc" || urls[1].ShortCode != "def" || urls[4].ShortCode != "xyz" {
+			t.Fatalf("sorting by short_code ASC failed: first=%s, second=%s, last=%s", urls[0].ShortCode, urls[1].ShortCode, urls[4].ShortCode)
+		}
+
+		_, err = repo.GetURLByCode("def")
+		if err != nil {
+			t.Fatalf("failed to increment click count: %v", err)
+		}
+
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 5,
+			Sort:  "click_count",
+			Order: "DESC",
+		})
+		if err != nil {
+			t.Fatalf("failed sorting click_count DESC: %v", err)
+		}
+		if urls[0].ShortCode != "def" {
+			t.Fatalf("expected def to be first in click_count DESC, got %s", urls[0].ShortCode)
+		}
+	})
+
+	t.Run("Invalid Sort/Order/Search Validation", func(t *testing.T) {
+		populateDB()
+
+		urls, err := repo.GetAllURLs(models.ListOptions{
+			Page:   1,
+			Limit:  5,
+			Sort:   "invalid_column_name",
+			Order:  "INVALID_DIR",
+			Search: "some search string",
+		})
+		if err != nil {
+			t.Fatalf("failed invalid sort/order validation: %v", err)
+		}
+		if len(urls) != 5 {
+			t.Fatalf("expected 5 URLs, got %d", len(urls))
+		}
+	})
+
+	t.Run("SQL Injection Protection", func(t *testing.T) {
+		populateDB()
+
+		urls, err := repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 5,
+			Sort:  "id; DROP TABLE urls; --",
+			Order: "ASC",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error on SQL injection test for Sort: %v", err)
+		}
+		if len(urls) != 5 {
+			t.Fatalf("expected 5 URLs, got %d", len(urls))
+		}
+
+		urls, err = repo.GetAllURLs(models.ListOptions{
+			Page:  1,
+			Limit: 5,
+			Sort:  "created_at",
+			Order: "ASC; DROP TABLE urls; --",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error on SQL injection test for Order: %v", err)
+		}
+		if len(urls) != 5 {
+			t.Fatalf("expected 5 URLs, got %d", len(urls))
+		}
+
+		var count int
+		err = repo.db.QueryRow("SELECT COUNT(*) FROM urls").Scan(&count)
+		if err != nil {
+			t.Fatalf("failed to query urls count (table might have been dropped): %v", err)
+		}
+		if count != 5 {
+			t.Fatalf("expected 5 URLs to still exist, got %d", count)
+		}
+	})
 }
