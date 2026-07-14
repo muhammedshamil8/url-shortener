@@ -19,4 +19,6 @@ type URLRepository interface {
 type UserRepository interface {
 	CreateUser(username, email, passwordHash string) (int64, error)
 	GetUserByEmail(email string) (*models.User, error)
+	GetAllURLsByUserEmail(email string) ([]models.URL, error)
+	DeleteUserURL(id int) error
 }

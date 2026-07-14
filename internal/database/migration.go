@@ -7,7 +7,7 @@ func MigrateUserTable(db *sql.DB) error {
 	CREATE TABLE IF NOT EXISTS users (
 		id SERIAL PRIMARY KEY,
 		username VARCHAR(50) NOT NULL UNIQUE,
-		password TEXT NOT NULL,
+		password_hash TEXT NOT NULL,
 		email TEXT NOT NULL UNIQUE,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);
