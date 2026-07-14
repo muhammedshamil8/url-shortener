@@ -27,6 +27,18 @@ func setupTestRouter(repo Repository) *gin.Engine {
 	r.DELETE("/api/v1/:id", h.DeleteHandler)
 	r.POST("/api/v1/auth/register", h.RegisterHandler)
 	r.POST("/api/v1/auth/login", h.LoginHandler)
+
+	authGroup := r.Group("/api/v1", func(c *gin.Context) {
+		c.Set("user_id", 1)
+		c.Set("email", "shamil@example.com")
+		c.Next()
+	})
+	{
+		authGroup.GET("/me", h.GetProfileHandler)
+		authGroup.GET("/my/urls", h.ListUserURLs)
+		authGroup.DELETE("/my/urls/:id", h.DeleteURL)
+	}
+
 	return r
 }
 
@@ -484,6 +496,157 @@ func TestLoginHandler(t *testing.T) {
 			r := setupTestRouter(tt.repo)
 
 			req, err := http.NewRequest(http.MethodPost, tt.path, strings.NewReader(tt.body))
+			if err != nil {
+				t.Fatalf("failed to create request: %v", err)
+			}
+			r.ServeHTTP(recorder, req)
+
+			if recorder.Code != tt.expectedStatus {
+				t.Fatalf("got %d, want %d", recorder.Code, tt.expectedStatus)
+			}
+			if !strings.Contains(recorder.Body.String(), tt.expectedBody) {
+				t.Fatalf("response body = %q, want it to contain %q",
+					recorder.Body.String(),
+					tt.expectedBody,
+				)
+			}
+		})
+	}
+}
+
+func TestDeleteUserURLHandler(t *testing.T) {
+	tests := []struct {
+		name           string
+		path           string
+		body           string
+		expectedStatus int
+		expectedBody   string
+		repo           *FakeRepository
+	}{
+		{
+			name:           "Delete User URL",
+			path:           "/api/v1/my/urls/1",
+			body:           `{"id":1}`,
+			expectedStatus: http.StatusOK,
+			expectedBody:   "success",
+			repo: &FakeRepository{
+				DeleteUserURLFunc: func(id int) error {
+					return nil
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			r := setupTestRouter(tt.repo)
+
+			req, err := http.NewRequest(http.MethodDelete, tt.path, strings.NewReader(tt.body))
+			if err != nil {
+				t.Fatalf("failed to create request: %v", err)
+			}
+			r.ServeHTTP(recorder, req)
+
+			if recorder.Code != tt.expectedStatus {
+				t.Fatalf("got %d, want %d", recorder.Code, tt.expectedStatus)
+			}
+			if !strings.Contains(recorder.Body.String(), tt.expectedBody) {
+				t.Fatalf("response body = %q, want it to contain %q",
+					recorder.Body.String(),
+					tt.expectedBody,
+				)
+			}
+		})
+	}
+}
+
+func TestGetUserURLsHandler(t *testing.T) {
+	tests := []struct {
+		name           string
+		path           string
+		body           string
+		expectedStatus int
+		expectedBody   string
+		repo           *FakeRepository
+	}{
+		{
+			name:           "Get User URLs",
+			path:           "/api/v1/my/urls",
+			body:           `{"email":"shamil@example.com"}`,
+			expectedStatus: http.StatusOK,
+			expectedBody:   "success",
+			repo: &FakeRepository{
+				GetAllURLsByUserEmailFunc: func(email string) ([]models.URL, error) {
+					return []models.URL{
+						{
+							ID:          1,
+							ShortCode:   "abc",
+							OriginalURL: "https://google.com",
+							CreatedAt:   time.Now(),
+							ClickCount:  0,
+						},
+					}, nil
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			r := setupTestRouter(tt.repo)
+
+			req, err := http.NewRequest(http.MethodGet, tt.path, strings.NewReader(tt.body))
+			if err != nil {
+				t.Fatalf("failed to create request: %v", err)
+			}
+			r.ServeHTTP(recorder, req)
+
+			if recorder.Code != tt.expectedStatus {
+				t.Fatalf("got %d, want %d", recorder.Code, tt.expectedStatus)
+			}
+			if !strings.Contains(recorder.Body.String(), tt.expectedBody) {
+				t.Fatalf("response body = %q, want it to contain %q",
+					recorder.Body.String(),
+					tt.expectedBody,
+				)
+			}
+		})
+	}
+}
+
+func TestGetProfileHandler(t *testing.T) {
+	tests := []struct {
+		name           string
+		path           string
+		expectedStatus int
+		expectedBody   string
+		repo           *FakeRepository
+	}{
+		{
+			name:           "Get Profile Success",
+			path:           "/api/v1/me",
+			expectedStatus: http.StatusOK,
+			expectedBody:   "success",
+			repo: &FakeRepository{
+				GetUserByEmailFunc: func(email string) (*models.User, error) {
+					return &models.User{
+						ID:       1,
+						Username: "shamil",
+						Email:    "shamil@example.com",
+					}, nil
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			r := setupTestRouter(tt.repo)
+
+			req, err := http.NewRequest(http.MethodGet, tt.path, nil)
 			if err != nil {
 				t.Fatalf("failed to create request: %v", err)
 			}

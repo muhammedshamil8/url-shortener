@@ -22,10 +22,15 @@ func setupTestDB(t *testing.T) *Repository {
 	if err != nil {
 		t.Fatal(err)
 	}
+	_, _ = db.Exec("DROP TABLE IF EXISTS urls CASCADE")
+	_, _ = db.Exec("DROP TABLE IF EXISTS users CASCADE")
+	if err := database.MigrateUserTable(db); err != nil {
+		t.Fatal(err)
+	}
 	if err := database.MigrateUrlTable(db); err != nil {
 		t.Fatal(err)
 	}
-	_, err = db.Exec("TRUNCATE TABLE urls RESTART IDENTITY")
+	_, err = db.Exec("TRUNCATE TABLE urls RESTART IDENTITY CASCADE")
 	if err != nil {
 		t.Fatal(err)
 	}

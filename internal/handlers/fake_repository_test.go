@@ -13,8 +13,10 @@ type FakeRepository struct {
 	HealthFunc         func() error
 	CreateShortURLFunc func(string, string) (int64, error)
 
-	CreateUserFunc     func(string, string, string) (int64, error)
-	GetUserByEmailFunc func(string) (*models.User, error)
+	CreateUserFunc            func(string, string, string) (int64, error)
+	GetUserByEmailFunc        func(string) (*models.User, error)
+	DeleteUserURLFunc         func(int) error
+	GetAllURLsByUserEmailFunc func(string) ([]models.URL, error)
 }
 
 // CreateUser implements [Repository].
@@ -64,6 +66,20 @@ func (m *FakeRepository) DeleteURL(id int) error {
 func (m *FakeRepository) GetAllURLs(opts models.ListOptions) ([]models.URL, error) {
 	if m.GetAllURLsFunc != nil {
 		return m.GetAllURLsFunc(opts)
+	}
+	return []models.URL{}, nil
+}
+
+func (m *FakeRepository) DeleteUserURL(id int) error {
+	if m.DeleteUserURLFunc != nil {
+		return m.DeleteUserURLFunc(id)
+	}
+	return nil
+}
+
+func (m *FakeRepository) GetAllURLsByUserEmail(email string) ([]models.URL, error) {
+	if m.GetAllURLsByUserEmailFunc != nil {
+		return m.GetAllURLsByUserEmailFunc(email)
 	}
 	return []models.URL{}, nil
 }
