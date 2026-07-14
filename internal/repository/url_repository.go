@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/muhammedshamil8/url-shortener/internal/logger"
@@ -60,12 +61,17 @@ func (r *Repository) DeleteURL(id int) error {
 	}
 	return nil
 }
+
 func (r *Repository) GetAllURLs(opts models.ListOptions) ([]models.URL, error) {
 	var urls []models.URL
 
 	opts.Normalize()
+	query := `
+SELECT id, short_code, original_url, created_at, click_count
+FROM urls
+`
 
-	query := "SELECT id, short_code, original_url, created_at, click_count FROM urls"
+	args := []any{}
 
 	sortColumn := "created_at"
 	switch opts.Sort {
@@ -89,12 +95,26 @@ func (r *Repository) GetAllURLs(opts models.ListOptions) ([]models.URL, error) {
 		orderDirection = "DESC"
 	}
 
-	query += " ORDER BY " + sortColumn + " " + orderDirection
+	if opts.Search != "" {
+		query += " WHERE original_url ILIKE $1 OR short_code ILIKE $1"
+		args = append(args, "%"+opts.Search+"%")
+	}
 
+	limitPos := len(args) + 1
+	offsetPos := len(args) + 2
 	offset := (opts.Page - 1) * opts.Limit
-	query += " LIMIT $1 OFFSET $2"
 
-	rows, err := r.db.Query(query, opts.Limit, offset)
+	query += fmt.Sprintf(
+		" ORDER BY %s %s LIMIT $%d OFFSET $%d",
+		sortColumn,
+		orderDirection,
+		limitPos,
+		offsetPos,
+	)
+
+	args = append(args, opts.Limit, offset)
+
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		logger.Log.Error("Error getting urls from database", "error", err)
 		return nil, err
