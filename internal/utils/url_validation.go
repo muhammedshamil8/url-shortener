@@ -11,7 +11,7 @@ const (
 )
 
 func ValidateURL(rawURL string) error {
-	u,err := url.Parse(rawURL)
+	u, err := url.Parse(rawURL)
 	if err != nil {
 		return err
 	}

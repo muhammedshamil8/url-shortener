@@ -11,7 +11,7 @@ import (
 
 var DB *sql.DB
 
-func InitDB(cfg config.DBConfig) (*sql.DB,error) {
+func InitDB(cfg config.DBConfig) (*sql.DB, error) {
 	var err error
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		cfg.Host,
@@ -22,19 +22,15 @@ func InitDB(cfg config.DBConfig) (*sql.DB,error) {
 		cfg.SSLMode)
 	DB, err = sql.Open("pgx", dsn)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	// Verify the connection is alive
 	if err := DB.Ping(); err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	logger.Log.Info("Successfully connected to PostgreSQL")
 
 	return DB, nil
 }
-
-
-
-

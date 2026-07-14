@@ -14,7 +14,6 @@ type URL struct {
 	ClickCount  int       `json:"click_count" example:"5"`
 }
 
-
 type SuccessResponse struct {
 	Status    string `json:"status" example:"success"`
 	Data      any    `json:"data"`

@@ -16,4 +16,3 @@ func GenerateShortCode() (string, error) {
 
 	return string(code), nil
 }
-

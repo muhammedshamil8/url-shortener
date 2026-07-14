@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/muhammedshamil8/url-shortener/internal/config"
 	"github.com/muhammedshamil8/url-shortener/internal/database"
 	"github.com/muhammedshamil8/url-shortener/internal/models"
-	"github.com/muhammedshamil8/url-shortener/internal/config"
 )
 
 func setupTestDB(t *testing.T) *Repository {
@@ -36,18 +36,18 @@ func setupTestDB(t *testing.T) *Repository {
 }
 
 func testURL() models.URL {
-    return models.URL{
-        OriginalURL: "https://google.com",
-        ShortCode:   "abc",
-		CreatedAt:     time.Now(),
-		ClickCount:    0,
-    }
+	return models.URL{
+		OriginalURL: "https://google.com",
+		ShortCode:   "abc",
+		CreatedAt:   time.Now(),
+		ClickCount:  0,
+	}
 }
 
 func TestCreateShortURL(t *testing.T) {
 	repo := setupTestDB(t)
 	URL := testURL()
-	id, err := repo.CreateShortURL(URL.ShortCode, URL.OriginalURL); 
+	id, err := repo.CreateShortURL(URL.ShortCode, URL.OriginalURL)
 	if err != nil {
 		t.Fatalf("failed to create short URL: %v", err)
 	}
@@ -70,7 +70,6 @@ func TestCreateShortURL(t *testing.T) {
 	if url.ClickCount != 0 {
 		t.Fatalf("expected click_count %d, got %d", 0, url.ClickCount)
 	}
-
 
 }
 
@@ -104,9 +103,9 @@ func TestDeleteURL(t *testing.T) {
 			var count int
 
 			err = repo.db.QueryRow(
-			"SELECT COUNT(*) FROM urls WHERE id = $1",
-			id,
-		).Scan(&count)
+				"SELECT COUNT(*) FROM urls WHERE id = $1",
+				id,
+			).Scan(&count)
 
 			if err != nil {
 				t.Fatal(err)
@@ -122,15 +121,15 @@ func TestDeleteURL(t *testing.T) {
 
 func TestGetAllURLs(t *testing.T) {
 	repo := setupTestDB(t)
-	repo.CreateShortURL("abc","https://google.com")
-	repo.CreateShortURL("xyz","https://github.com")
-	repo.CreateShortURL("def","https://golang.org")
+	repo.CreateShortURL("abc", "https://google.com")
+	repo.CreateShortURL("xyz", "https://github.com")
+	repo.CreateShortURL("def", "https://golang.org")
 
 	urls, err := repo.GetAllURLs()
 	if err != nil {
 		t.Fatalf("failed to get all URLs: %v", err)
 	}
 	if len(urls) != 3 {
-    t.Fatalf("expected 3 URLs, got %d", len(urls))
-}
+		t.Fatalf("expected 3 URLs, got %d", len(urls))
+	}
 }

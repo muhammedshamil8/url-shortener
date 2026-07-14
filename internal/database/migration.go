@@ -2,9 +2,6 @@ package database
 
 import "database/sql"
 
-
-
-
 func MigrateUrlTable(db *sql.DB) error {
 	query := `
 	CREATE TABLE IF NOT EXISTS urls (
@@ -22,4 +19,4 @@ func MigrateUrlTable(db *sql.DB) error {
 	}
 
 	return nil
-}	
+}

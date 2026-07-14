@@ -8,5 +8,3 @@ type URLRepository interface {
 	DeleteURL(id int) error
 	GetAllURLs() ([]models.URL, error)
 }
-
-

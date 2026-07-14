@@ -8,15 +8,14 @@ import (
 )
 
 type Repository struct {
-    db *sql.DB
+	db *sql.DB
 }
 
 func New(db *sql.DB) *Repository {
-    return &Repository{db: db}
+	return &Repository{db: db}
 }
 
-
-func (r *Repository)CreateShortURL(shortCode, url string) (int64, error) {
+func (r *Repository) CreateShortURL(shortCode, url string) (int64, error) {
 	var id int64
 	err := r.db.QueryRow(
 		`INSERT INTO urls (short_code, original_url) 
@@ -31,7 +30,7 @@ func (r *Repository)CreateShortURL(shortCode, url string) (int64, error) {
 	return id, nil
 }
 
-func (r *Repository)GetURLByCode(code string) (string, error) {
+func (r *Repository) GetURLByCode(code string) (string, error) {
 	var url string
 
 	err := r.db.QueryRow(
@@ -49,7 +48,7 @@ func (r *Repository)GetURLByCode(code string) (string, error) {
 	return url, nil
 }
 
-func (r *Repository)DeleteURL(id int) error {
+func (r *Repository) DeleteURL(id int) error {
 	_, err := r.db.Exec("DELETE FROM urls WHERE id = $1", id)
 	if err != nil {
 		logger.Log.Error("Error deleting from database", "error", err)
@@ -58,7 +57,7 @@ func (r *Repository)DeleteURL(id int) error {
 	return nil
 }
 
-func (r *Repository)GetAllURLs() ([]models.URL, error) {
+func (r *Repository) GetAllURLs() ([]models.URL, error) {
 	var urls []models.URL
 	rows, err := r.db.Query("SELECT id, short_code, original_url, created_at, click_count FROM urls")
 	if err != nil {

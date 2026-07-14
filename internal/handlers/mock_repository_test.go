@@ -3,9 +3,9 @@ package handlers
 import "github.com/muhammedshamil8/url-shortener/internal/models"
 
 type MockRepository struct {
-	GetURLByCodeFunc   func(string) (string, error)
-	DeleteURLFunc      func(int) error
-	GetAllURLsFunc     func() ([]models.URL, error)
+	GetURLByCodeFunc func(string) (string, error)
+	DeleteURLFunc    func(int) error
+	GetAllURLsFunc   func() ([]models.URL, error)
 }
 
 func (m *MockRepository) CreateShortURL(shortCode, url string) (int64, error) {

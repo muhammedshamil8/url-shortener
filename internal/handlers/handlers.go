@@ -21,12 +21,12 @@ const (
 )
 
 type Handler struct {
-    repo URLRepository
-	cfg config.Config
+	repo URLRepository
+	cfg  config.Config
 }
 
-func New(repo URLRepository,cfg config.Config) *Handler {
-	return &Handler{repo: repo,cfg: cfg}
+func New(repo URLRepository, cfg config.Config) *Handler {
+	return &Handler{repo: repo, cfg: cfg}
 }
 
 // HealthCheck godoc
@@ -38,7 +38,7 @@ func New(repo URLRepository,cfg config.Config) *Handler {
 //	@Success		200	{object}	models.SuccessResponse
 //	@Failure		500	{object}	models.ErrorResponse
 //	@Router			/health/api [get]
-func (h *Handler)HealthCheckHandler(c *gin.Context) {
+func (h *Handler) HealthCheckHandler(c *gin.Context) {
 	response.OK(c, gin.H{
 		"message": "Welcome to URL Shortener Service",
 	})
@@ -46,17 +46,17 @@ func (h *Handler)HealthCheckHandler(c *gin.Context) {
 
 // Shorten godoc
 //
-//	@Summary	Shorten a URL
-//	@Description	Create a short URL from a long URL
-//	@Tags	URLs
-//	@Accept	json
-//	@Produce	json
-//  @Param	request	body	models.ShortenRequest	true	"Request body"
-//	@Success	200	{object}	models.SuccessResponse
-//	@Failure	400	{object}	models.ErrorResponse
-//	@Failure	500	{object}	models.ErrorResponse
-//	@Router	/shorten [post]
-func (h *Handler)ShortenHandler(c *gin.Context) {
+//		@Summary	Shorten a URL
+//		@Description	Create a short URL from a long URL
+//		@Tags	URLs
+//		@Accept	json
+//		@Produce	json
+//	 @Param	request	body	models.ShortenRequest	true	"Request body"
+//		@Success	200	{object}	models.SuccessResponse
+//		@Failure	400	{object}	models.ErrorResponse
+//		@Failure	500	{object}	models.ErrorResponse
+//		@Router	/shorten [post]
+func (h *Handler) ShortenHandler(c *gin.Context) {
 	var req models.ShortenRequest
 	if err := c.BindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "Invalid request body")
@@ -98,16 +98,16 @@ func (h *Handler)ShortenHandler(c *gin.Context) {
 
 // Redirect godoc
 //
-//	@Summary	Redirect to original URL
-//	@Description	Redirect to original URL based on short code
-//	@Tags	URLs
-//	@Produce	json
-//	@Param	code	path	string	true	"Short code"
-//  @Success 303 {string} string "Redirect"
-//	@Failure	404	{object}	models.ErrorResponse
-//	@Failure	500	{object}	models.ErrorResponse
-//	@Router	/{code} [get]
-func (h *Handler)RedirectHandler(c *gin.Context) {
+//		@Summary	Redirect to original URL
+//		@Description	Redirect to original URL based on short code
+//		@Tags	URLs
+//		@Produce	json
+//		@Param	code	path	string	true	"Short code"
+//	 @Success 303 {string} string "Redirect"
+//		@Failure	404	{object}	models.ErrorResponse
+//		@Failure	500	{object}	models.ErrorResponse
+//		@Router	/{code} [get]
+func (h *Handler) RedirectHandler(c *gin.Context) {
 	code := c.Param("code")
 	url, err := h.repo.GetURLByCode(code)
 	if err != nil {
@@ -129,7 +129,7 @@ func (h *Handler)RedirectHandler(c *gin.Context) {
 //
 //	@Summary	Delete a URL
 //	@Description	Delete a URL based on id
-//	@Tags	URLs 
+//	@Tags	URLs
 //	@Produce	json
 //	@Param	id	path	int	true	"URL ID"
 //	@Success	200	{object}	models.SuccessResponse
@@ -137,7 +137,7 @@ func (h *Handler)RedirectHandler(c *gin.Context) {
 //	@Failure	404	{object}	models.ErrorResponse
 //	@Failure	500	{object}	models.ErrorResponse
 //	@Router	/{id} [delete]
-func (h *Handler)DeleteHandler(c *gin.Context) {
+func (h *Handler) DeleteHandler(c *gin.Context) {
 	idstr := c.Param("id")
 	id, err := strconv.Atoi(idstr)
 	if err != nil {
@@ -158,13 +158,13 @@ func (h *Handler)DeleteHandler(c *gin.Context) {
 //
 //	@Summary	List all URLs
 //	@Description	List all URLs
-//	@Tags	URLs 
+//	@Tags	URLs
 //	@Produce	json
 //	@Success	200	{object}	models.SuccessResponse
 //	@Failure	404	{object}	models.ErrorResponse
 //	@Failure	500	{object}	models.ErrorResponse
 //	@Router	/urls/all [get]
-func (h *Handler)ListAllHandler(c *gin.Context) {
+func (h *Handler) ListAllHandler(c *gin.Context) {
 	urls, err := h.repo.GetAllURLs()
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Failed to get all urls")
