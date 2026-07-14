@@ -8,8 +8,8 @@ import (
 )
 
 type Visitor struct {
-    limiter  *rate.Limiter
-    lastSeen time.Time
+	limiter  *rate.Limiter
+	lastSeen time.Time
 }
 
 type RateLimiter struct {
@@ -18,17 +18,17 @@ type RateLimiter struct {
 }
 
 const (
-    // Maximum sustained requests per second
-    rateLimit = 10
+	// Maximum sustained requests per second
+	rateLimit = 10
 
-    // Maximum burst allowed
-    burstSize = 5
+	// Maximum burst allowed
+	burstSize = 5
 
-    // Cleanup interval for inactive visitors
-    cleanupEvery = time.Minute
+	// Cleanup interval for inactive visitors
+	cleanupEvery = time.Minute
 
-    // Remove visitors inactive for this duration
-    visitorTimeout = 10 * time.Minute
+	// Remove visitors inactive for this duration
+	visitorTimeout = 10 * time.Minute
 )
 
 func NewRateLimiter() *RateLimiter {
@@ -47,7 +47,7 @@ func (rl *RateLimiter) cleanupVisitors() {
 
 	for range ticker.C {
 		rl.mu.Lock()
-		
+
 		for ip, visitor := range rl.visitors {
 			if time.Since(visitor.lastSeen) > visitorTimeout {
 				delete(rl.visitors, ip)
@@ -58,22 +58,20 @@ func (rl *RateLimiter) cleanupVisitors() {
 }
 
 func (rl *RateLimiter) getVisitor(ip string) *Visitor {
-    rl.mu.Lock()
-    defer rl.mu.Unlock()
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
 
-    visitor, exists := rl.visitors[ip]
-    now := time.Now()
-    if !exists {
-        visitor = &Visitor{
-            limiter: rate.NewLimiter(rate.Every(time.Second/rateLimit), burstSize),
-            lastSeen: now,
-        }
-        rl.visitors[ip] = visitor
-    }
+	visitor, exists := rl.visitors[ip]
+	now := time.Now()
+	if !exists {
+		visitor = &Visitor{
+			limiter:  rate.NewLimiter(rate.Every(time.Second/rateLimit), burstSize),
+			lastSeen: now,
+		}
+		rl.visitors[ip] = visitor
+	}
 
-    visitor.lastSeen = now
+	visitor.lastSeen = now
 
-    return visitor
+	return visitor
 }
-
-

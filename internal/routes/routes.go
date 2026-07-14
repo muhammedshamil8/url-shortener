@@ -17,7 +17,6 @@ func Setup(r *gin.Engine, h *handlers.Handler, cfg *config.Config) {
 	rateLimiter := middleware.NewRateLimiter()
 	r.Use(middleware.RateLimit(rateLimiter))
 
-
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/:code", h.RedirectHandler)
 
