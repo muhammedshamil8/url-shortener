@@ -148,6 +148,15 @@ func (h *Handler) DeleteHandler(c *gin.Context) {
 //	@Summary	List all URLs
 //	@Description	List all URLs
 //	@Tags	URLs
+//	@Param	start_date	query	string	false	"Start date"
+//	@Param	end_date	query	string	false	"End date"
+//	@Param	limit	query	int	false	"Limit"
+//	@Param	offset	query	int	false	"Offset"
+//	@Param	sort_by	query	string	false	"Sort by"
+//	@Param	sort_order	query	string	false	"Sort order"
+//	@Param	min_clicks	query	int	false	"Minimum clicks"
+//	@Param	max_clicks	query	int	false	"Maximum clicks"
+//	@Param	search	query	string	false	"Search"
 //	@Produce	json
 //	@Success	200	{object}	models.SuccessResponse
 //	@Failure	404	{object}	models.ErrorResponse
