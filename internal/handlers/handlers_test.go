@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,18 +15,19 @@ import (
 )
 
 func setupTestRouter(repo URLRepository) *gin.Engine {
-	r := gin.Default()
+	r := gin.New()
 	h := New(repo, config.Config{})
 
-	r.GET("/health/api", h.HealthCheckHandler)
-	r.POST("/shorten", h.ShortenHandler)
+	r.GET("/api/v1/live", h.LiveHandler)
+	r.GET("/api/v1/ready", h.ReadyHandler)
+	r.POST("/api/v1/shorten", h.ShortenHandler)
 	r.GET("/:code", h.RedirectHandler)
-	r.GET("/urls/all", h.ListAllHandler)
-	r.DELETE("/:id", h.DeleteHandler)
+	r.GET("/api/v1/urls", h.ListAllHandler)
+	r.DELETE("/api/v1/:id", h.DeleteHandler)
 	return r
 }
 
-func TestHealthCheckHandler(t *testing.T) {
+func TestLiveHandler(t *testing.T) {
 	tests := []struct {
 		name           string
 		path           string
@@ -34,19 +36,14 @@ func TestHealthCheckHandler(t *testing.T) {
 	}{
 		{
 			name:           "Health Check",
-			path:           "/health/api",
+			path:           "/api/v1/live",
 			expectedStatus: http.StatusOK,
-			expectedBody:   "Welcome to URL Shortener Service",
-		},
-		{
-			name:           "Not Found",
-			path:           "/health/unknown",
-			expectedStatus: http.StatusNotFound,
-			expectedBody:   "404 page not found",
+			expectedBody:   "alive",
 		},
 	}
 
-	r := setupTestRouter(&MockRepository{})
+	repo := &FakeRepository{}
+	r := setupTestRouter(repo)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -73,38 +70,38 @@ func TestHealthCheckHandler(t *testing.T) {
 
 func TestShortenHandler(t *testing.T) {
 	tests := []struct {
-		name           string
-		body           string
-		expectedStatus int
-		expectedBody   string
+		name             string
+		body             string
+		expectedStatus   int
+		expectedContains string
 	}{
 		{
-			name:           "Empty Body",
-			body:           "",
-			expectedStatus: http.StatusBadRequest,
-			expectedBody:   "Invalid request body",
+			name:             "Empty Body",
+			body:             "",
+			expectedStatus:   http.StatusBadRequest,
+			expectedContains: "Invalid request body",
 		},
 		{
-			name:           "Malformed JSON",
-			body:           `{"url":`,
-			expectedStatus: http.StatusBadRequest,
-			expectedBody:   "Invalid request body",
+			name:             "Malformed JSON",
+			body:             `{"url":`,
+			expectedStatus:   http.StatusBadRequest,
+			expectedContains: "Invalid request body",
 		},
 		{
-			name:           "Missing URL Field",
-			body:           `{}`,
-			expectedStatus: http.StatusBadRequest,
-			expectedBody:   "Invalid request body",
+			name:             "Missing URL Field",
+			body:             `{}`,
+			expectedStatus:   http.StatusBadRequest,
+			expectedContains: "Invalid request body",
 		},
 		{
-			name:           "Invalid URL",
-			body:           `{"url":"hello"}`,
-			expectedStatus: http.StatusBadRequest,
-			expectedBody:   "Invalid URL",
+			name:             "Invalid URL",
+			body:             `{"url":"hello"}`,
+			expectedStatus:   http.StatusBadRequest,
+			expectedContains: "Invalid URL",
 		},
 	}
-
-	r := setupTestRouter(&MockRepository{})
+	repo := &FakeRepository{}
+	r := setupTestRouter(repo)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -113,7 +110,7 @@ func TestShortenHandler(t *testing.T) {
 
 			req, err := http.NewRequest(
 				http.MethodPost,
-				"/shorten",
+				"/api/v1/shorten",
 				body,
 			)
 			if err != nil {
@@ -127,8 +124,8 @@ func TestShortenHandler(t *testing.T) {
 			if recorder.Code != tt.expectedStatus {
 				t.Errorf("test %q: status code %d, want %d", tt.name, recorder.Code, tt.expectedStatus)
 			}
-			if !strings.Contains(recorder.Body.String(), tt.expectedBody) {
-				t.Errorf("test %q: body %q, want %q", tt.name, recorder.Body.String(), tt.expectedBody)
+			if !strings.Contains(recorder.Body.String(), tt.expectedContains) {
+				t.Errorf("test %q: body %q, want %q", tt.name, recorder.Body.String(), tt.expectedContains)
 			}
 		})
 	}
@@ -140,25 +137,36 @@ func TestRedirectHandler(t *testing.T) {
 		path           string
 		expectedStatus int
 		expectedBody   string
-		repo           *MockRepository
+		repo           *FakeRepository
 	}{
 		{
 			name:           "Redirect",
 			path:           "/abc",
 			expectedStatus: http.StatusSeeOther,
 			expectedBody:   "https://google.com",
-			repo: &MockRepository{
+			repo: &FakeRepository{
 				GetURLByCodeFunc: func(code string) (string, error) {
 					return "https://google.com", nil
 				},
 			},
 		},
 		{
-			name:           "Not Found",
+			name:           "db down",
 			path:           "/xyz",
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   "Database error",
+			repo: &FakeRepository{
+				GetURLByCodeFunc: func(code string) (string, error) {
+					return "", errors.New("database error")
+				},
+			},
+		},
+		{
+			name:           "Not Found",
+			path:           "/abcd",
 			expectedStatus: http.StatusNotFound,
 			expectedBody:   "URL not found",
-			repo: &MockRepository{
+			repo: &FakeRepository{
 				GetURLByCodeFunc: func(code string) (string, error) {
 					return "", sql.ErrNoRows
 				},
@@ -197,27 +205,45 @@ func TestDeleteHandler(t *testing.T) {
 		path           string
 		expectedStatus int
 		expectedBody   string
-		repo           *MockRepository
+		repo           *FakeRepository
 	}{
 		{
 			name:           "Delete",
-			path:           "/1",
+			path:           "/api/v1/1",
 			expectedStatus: http.StatusOK,
 			expectedBody:   "URL deleted successfully",
-			repo: &MockRepository{
+			repo: &FakeRepository{
 				DeleteURLFunc: func(id int) error {
 					return nil
 				},
 			},
 		},
 		{
-			name:           "Not Found",
-			path:           "/xyz",
+			name:           "Invalid ID",
+			path:           "/api/v1/xyz",
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   "Invalid id",
-			repo: &MockRepository{
+			expectedBody:   "",
+			repo:           &FakeRepository{},
+		},
+		{
+			name:           "URL not found",
+			path:           "/api/v1/2",
+			expectedStatus: http.StatusNotFound,
+			expectedBody:   "URL not found",
+			repo: &FakeRepository{
 				DeleteURLFunc: func(id int) error {
 					return sql.ErrNoRows
+				},
+			},
+		},
+		{
+			name:           "db down",
+			path:           "/api/v1/2",
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   "Failed to delete url",
+			repo: &FakeRepository{
+				DeleteURLFunc: func(id int) error {
+					return errors.New("database error")
 				},
 			},
 		},
@@ -249,26 +275,21 @@ func TestDeleteHandler(t *testing.T) {
 
 func TestListAllHandler(t *testing.T) {
 	tests := []struct {
-		name           string
-		path           string
-		expectedStatus int
-		expectedBody   any
-		repo           *MockRepository
+		name             string
+		path             string
+		expectedStatus   int
+		expectedContains []string
+		repo             *FakeRepository
 	}{
 		{
 			name:           "List All",
-			path:           "/urls/all",
+			path:           "/api/v1/urls",
 			expectedStatus: http.StatusOK,
-			expectedBody: []models.URL{
-				{
-					ID:          1,
-					OriginalURL: "https://google.com",
-					ShortCode:   "abc",
-					CreatedAt:   time.Now(),
-					ClickCount:  0,
-				},
+			expectedContains: []string{
+				"https://google.com",
+				"abc",
 			},
-			repo: &MockRepository{
+			repo: &FakeRepository{
 				GetAllURLsFunc: func() ([]models.URL, error) {
 					return []models.URL{
 						{
@@ -283,13 +304,13 @@ func TestListAllHandler(t *testing.T) {
 			},
 		},
 		{
-			name:           "Not Found",
-			path:           "/urls/xyz",
-			expectedStatus: http.StatusNotFound,
-			expectedBody:   "404 page not found",
-			repo: &MockRepository{
+			name:             "Repository Error",
+			path:             "/api/v1/urls",
+			expectedStatus:   http.StatusInternalServerError,
+			expectedContains: []string{"Failed to get all urls"},
+			repo: &FakeRepository{
 				GetAllURLsFunc: func() ([]models.URL, error) {
-					return []models.URL{}, nil
+					return nil, errors.New("database error")
 				},
 			},
 		},
@@ -309,24 +330,70 @@ func TestListAllHandler(t *testing.T) {
 			if recorder.Code != tt.expectedStatus {
 				t.Fatalf("got %d, want %d", recorder.Code, tt.expectedStatus)
 			}
-
-			switch bodyVal := tt.expectedBody.(type) {
-			case []models.URL:
-				for _, url := range bodyVal {
-					if !strings.Contains(recorder.Body.String(), url.OriginalURL) {
-						t.Fatalf("response body = %q, want it to contain %q",
-							recorder.Body.String(),
-							url.OriginalURL,
-						)
-					}
-				}
-			case string:
-				if !strings.Contains(recorder.Body.String(), bodyVal) {
-					t.Fatalf("response body = %q, want it to contain %q",
+			for _, s := range tt.expectedContains {
+				if !strings.Contains(recorder.Body.String(), s) {
+					t.Fatalf(
+						"response body = %q, want it to contain %q",
 						recorder.Body.String(),
-						bodyVal,
+						s,
 					)
 				}
+			}
+		})
+	}
+}
+
+func TestReadyHandler(t *testing.T) {
+	tests := []struct {
+		name           string
+		path           string
+		expectedStatus int
+		expectedBody   string
+		repo           *FakeRepository
+	}{
+		{
+			name:           "Ready",
+			path:           "/api/v1/ready",
+			expectedStatus: http.StatusOK,
+			expectedBody:   "ready",
+			repo: &FakeRepository{
+				HealthFunc: func() error {
+					return nil
+				},
+			},
+		},
+		{
+			name:           "Not Ready",
+			path:           "/api/v1/ready",
+			expectedStatus: http.StatusServiceUnavailable,
+			expectedBody:   "database is unavailable",
+			repo: &FakeRepository{
+				HealthFunc: func() error {
+					return errors.New("database unavailable")
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			r := setupTestRouter(tt.repo)
+
+			req, err := http.NewRequest(http.MethodGet, tt.path, nil)
+			if err != nil {
+				t.Fatalf("failed to create request: %v", err)
+			}
+			r.ServeHTTP(recorder, req)
+
+			if recorder.Code != tt.expectedStatus {
+				t.Fatalf("got %d, want %d", recorder.Code, tt.expectedStatus)
+			}
+			if !strings.Contains(recorder.Body.String(), tt.expectedBody) {
+				t.Fatalf("response body = %q, want it to contain %q",
+					recorder.Body.String(),
+					tt.expectedBody,
+				)
 			}
 		})
 	}
