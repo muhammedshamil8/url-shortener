@@ -59,13 +59,12 @@ func TestValidateToken(t *testing.T) {
 		t.Fatalf("failed to validate token: %v", err)
 	}
 
-	decodedUserID := int(decodedClaims["user_id"].(float64))
-	if decodedUserID != userID {
-		t.Fatalf("user_id does not match: got %v, want %v", decodedUserID, userID)
+	if decodedClaims.UserID != userID {
+		t.Fatalf("user_id does not match: got %v, want %v", decodedClaims.UserID, userID)
 	}
 
-	if decodedClaims["email"] != email {
-		t.Fatalf("email does not match: got %v, want %v", decodedClaims["email"], email)
+	if decodedClaims.Email != email {
+		t.Fatalf("email does not match: got %v, want %v", decodedClaims.Email, email)
 	}
 }
 
