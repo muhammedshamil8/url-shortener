@@ -23,8 +23,10 @@ func setupTestRouter(repo Repository) *gin.Engine {
 	r.GET("/api/v1/ready", h.ReadyHandler)
 	r.POST("/api/v1/shorten", h.ShortenHandler)
 	r.GET("/:code", h.RedirectHandler)
-	r.GET("/api/v1/urls", h.ListAllHandler)
-	r.DELETE("/api/v1/:id", h.DeleteHandler)
+	r.GET("/api/v1/admin/urls", h.ListAllHandler)
+	r.DELETE("/api/v1/admin/urls/:id", h.DeleteHandler)
+	r.GET("/api/v1/admin/users", h.AdminListUsers)
+	r.DELETE("/api/v1/admin/users/:id", h.AdminDeleteUser)
 	r.POST("/api/v1/auth/register", h.RegisterHandler)
 	r.POST("/api/v1/auth/login", h.LoginHandler)
 	r.POST("/api/v1/auth/refresh", h.RefreshHandler)
@@ -225,7 +227,7 @@ func TestDeleteHandler(t *testing.T) {
 	}{
 		{
 			name:           "Delete",
-			path:           "/api/v1/1",
+			path:           "/api/v1/admin/urls/1",
 			expectedStatus: http.StatusOK,
 			expectedBody:   "URL deleted successfully",
 			repo: &FakeRepository{
@@ -236,14 +238,14 @@ func TestDeleteHandler(t *testing.T) {
 		},
 		{
 			name:           "Invalid ID",
-			path:           "/api/v1/xyz",
+			path:           "/api/v1/admin/urls/xyz",
 			expectedStatus: http.StatusBadRequest,
 			expectedBody:   "",
 			repo:           &FakeRepository{},
 		},
 		{
 			name:           "URL not found",
-			path:           "/api/v1/2",
+			path:           "/api/v1/admin/urls/2",
 			expectedStatus: http.StatusNotFound,
 			expectedBody:   "URL not found",
 			repo: &FakeRepository{
@@ -254,7 +256,7 @@ func TestDeleteHandler(t *testing.T) {
 		},
 		{
 			name:           "db down",
-			path:           "/api/v1/2",
+			path:           "/api/v1/admin/urls/2",
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody:   "Failed to delete url",
 			repo: &FakeRepository{
@@ -299,7 +301,7 @@ func TestListAllHandler(t *testing.T) {
 	}{
 		{
 			name:           "List All",
-			path:           "/api/v1/urls",
+			path:           "/api/v1/admin/urls",
 			expectedStatus: http.StatusOK,
 			expectedContains: []string{
 				"https://google.com",
@@ -321,7 +323,7 @@ func TestListAllHandler(t *testing.T) {
 		},
 		{
 			name:             "Repository Error",
-			path:             "/api/v1/urls",
+			path:             "/api/v1/admin/urls",
 			expectedStatus:   http.StatusInternalServerError,
 			expectedContains: []string{"Failed to get all urls"},
 			repo: &FakeRepository{
@@ -725,6 +727,142 @@ func TestRefreshHandler(t *testing.T) {
 
 			if recorder.Code != tt.expectedStatus {
 				t.Fatalf("got %d, want %d (body: %s)", recorder.Code, tt.expectedStatus, recorder.Body.String())
+			}
+			if !strings.Contains(recorder.Body.String(), tt.expectedBody) {
+				t.Fatalf("response body = %q, want it to contain %q",
+					recorder.Body.String(),
+					tt.expectedBody,
+				)
+			}
+		})
+	}
+}
+
+func TestAdminListUsers(t *testing.T) {
+	tests := []struct {
+		name           string
+		path           string
+		expectedStatus int
+		expectedBody   string
+		repo           *FakeRepository
+	}{
+		{
+			name:           "List Users Success",
+			path:           "/api/v1/admin/users",
+			expectedStatus: http.StatusOK,
+			expectedBody:   "admin-user",
+			repo: &FakeRepository{
+				GetAllUsersFunc: func() ([]models.User, error) {
+					return []models.User{
+						{
+							ID:       1,
+							Username: "admin-user",
+							Email:    "admin@example.com",
+						},
+					}, nil
+				},
+			},
+		},
+		{
+			name:           "List Users Repository Error",
+			path:           "/api/v1/admin/users",
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   "Failed to retrieve users",
+			repo: &FakeRepository{
+				GetAllUsersFunc: func() ([]models.User, error) {
+					return nil, errors.New("db error")
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			r := setupTestRouter(tt.repo)
+
+			req, err := http.NewRequest(http.MethodGet, tt.path, nil)
+			if err != nil {
+				t.Fatalf("failed to create request: %v", err)
+			}
+			r.ServeHTTP(recorder, req)
+
+			if recorder.Code != tt.expectedStatus {
+				t.Fatalf("got %d, want %d", recorder.Code, tt.expectedStatus)
+			}
+			if !strings.Contains(recorder.Body.String(), tt.expectedBody) {
+				t.Fatalf("response body = %q, want it to contain %q",
+					recorder.Body.String(),
+					tt.expectedBody,
+				)
+			}
+		})
+	}
+}
+
+func TestAdminDeleteUser(t *testing.T) {
+	tests := []struct {
+		name           string
+		path           string
+		expectedStatus int
+		expectedBody   string
+		repo           *FakeRepository
+	}{
+		{
+			name:           "Delete User Success",
+			path:           "/api/v1/admin/users/1",
+			expectedStatus: http.StatusOK,
+			expectedBody:   "success",
+			repo: &FakeRepository{
+				DeleteUserFunc: func(id int) error {
+					return nil
+				},
+			},
+		},
+		{
+			name:           "Delete User Invalid ID",
+			path:           "/api/v1/admin/users/xyz",
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   "Invalid user ID",
+			repo:           &FakeRepository{},
+		},
+		{
+			name:           "Delete User Not Found",
+			path:           "/api/v1/admin/users/2",
+			expectedStatus: http.StatusNotFound,
+			expectedBody:   "User not found",
+			repo: &FakeRepository{
+				DeleteUserFunc: func(id int) error {
+					return sql.ErrNoRows
+				},
+			},
+		},
+		{
+			name:           "Delete User Repository Error",
+			path:           "/api/v1/admin/users/2",
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   "Failed to delete user",
+			repo: &FakeRepository{
+				DeleteUserFunc: func(id int) error {
+					return errors.New("db error")
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			r := setupTestRouter(tt.repo)
+
+			req, err := http.NewRequest(http.MethodDelete, tt.path, nil)
+			if err != nil {
+				t.Fatalf("failed to create request: %v", err)
+			}
+			r.ServeHTTP(recorder, req)
+
+			if recorder.Code != tt.expectedStatus {
+				t.Fatalf("got %d, want %d", recorder.Code, tt.expectedStatus)
 			}
 			if !strings.Contains(recorder.Body.String(), tt.expectedBody) {
 				t.Fatalf("response body = %q, want it to contain %q",

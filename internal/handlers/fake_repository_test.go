@@ -17,6 +17,8 @@ type FakeRepository struct {
 	GetUserByEmailFunc        func(string) (*models.User, error)
 	DeleteUserURLFunc         func(int) error
 	GetAllURLsByUserEmailFunc func(string) ([]models.URL, error)
+	GetAllUsersFunc           func() ([]models.User, error)
+	DeleteUserFunc            func(int) error
 }
 
 // CreateUser implements [Repository].
@@ -82,4 +84,18 @@ func (m *FakeRepository) GetAllURLsByUserEmail(email string) ([]models.URL, erro
 		return m.GetAllURLsByUserEmailFunc(email)
 	}
 	return []models.URL{}, nil
+}
+
+func (m *FakeRepository) GetAllUsers() ([]models.User, error) {
+	if m.GetAllUsersFunc != nil {
+		return m.GetAllUsersFunc()
+	}
+	return []models.User{}, nil
+}
+
+func (m *FakeRepository) DeleteUser(id int) error {
+	if m.DeleteUserFunc != nil {
+		return m.DeleteUserFunc(id)
+	}
+	return nil
 }

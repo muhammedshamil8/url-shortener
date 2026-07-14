@@ -162,3 +162,52 @@ func TestDeleteUserURL(t *testing.T) {
 		t.Fatalf("expected url to be deleted, but it exists")
 	}
 }
+
+func TestGetAllUsers(t *testing.T) {
+	repo := setupTestUserDB(t)
+
+	_, err := repo.CreateUser("user1", "user1@example.com", "hash1")
+	if err != nil {
+		t.Fatalf("failed to create user 1: %v", err)
+	}
+
+	_, err = repo.CreateUser("user2", "user2@example.com", "hash2")
+	if err != nil {
+		t.Fatalf("failed to create user 2: %v", err)
+	}
+
+	users, err := repo.GetAllUsers()
+	if err != nil {
+		t.Fatalf("failed to get all users: %v", err)
+	}
+
+	if len(users) != 2 {
+		t.Fatalf("expected 2 users, got %d", len(users))
+	}
+	if users[0].Username != "user1" || users[1].Username != "user2" {
+		t.Fatalf("unexpected user details retrieved")
+	}
+}
+
+func TestDeleteUser(t *testing.T) {
+	repo := setupTestUserDB(t)
+
+	id, err := repo.CreateUser("user1", "user1@example.com", "hash1")
+	if err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	err = repo.DeleteUser(int(id))
+	if err != nil {
+		t.Fatalf("failed to delete user: %v", err)
+	}
+
+	var count int
+	err = repo.db.QueryRow("SELECT COUNT(*) FROM users WHERE id = $1", id).Scan(&count)
+	if err != nil {
+		t.Fatalf("failed to query users count: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("expected user to be deleted, but it exists")
+	}
+}
