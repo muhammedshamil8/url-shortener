@@ -18,19 +18,27 @@ import (
 	"github.com/muhammedshamil8/url-shortener/internal/database"
 	"github.com/muhammedshamil8/url-shortener/internal/handlers"
 	"github.com/muhammedshamil8/url-shortener/internal/logger"
-	"github.com/muhammedshamil8/url-shortener/internal/middleware"
 	"github.com/muhammedshamil8/url-shortener/internal/repository"
-
+	"github.com/muhammedshamil8/url-shortener/internal/routes"
+	"github.com/muhammedshamil8/url-shortener/internal/server"
 	_ "github.com/muhammedshamil8/url-shortener/docs"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func main() {
 	logger.Init()
 
-	_ = godotenv.Load()
+	if os.Getenv("APP_ENV") != "production" {
+		if err := godotenv.Load(); err != nil {
+			logger.Log.Warn(".env file not found")
+		}
+	}
+
 	cfg := config.Load()
+
+	if err := cfg.Validate(); err != nil {
+		logger.Log.Error("invalid configuration", "error", err)
+		os.Exit(1)
+	}
 
 	logger.Log.Info("Server starting", "environment", cfg.Env)
 
@@ -56,32 +64,12 @@ func main() {
 		logger.Log.Error("Failed to set trusted proxies", "error", err)
 		os.Exit(1)
 	}
-	r.Use(gin.Recovery())
-	r.Use(middleware.RequestID())
-	r.Use(middleware.Logger())
 
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	r.GET("/health/api", h.HealthCheckHandler)
-	r.POST("/shorten", h.ShortenHandler)
-	r.GET("/urls/all", h.ListAllHandler)
-	r.DELETE("/:id", h.DeleteHandler)
-	r.GET("/:code", h.RedirectHandler)
+	routes.Setup(r, h)
 
-	port := cfg.Server.Port
-	if port == "" {
-		logger.Log.Warn("APP_PORT is not set")
-		logger.Log.Info("Automatic setting to 8080")
-		port = "8080"
-	}
 
-	logger.Log.Info("Server running on port " + port)
-	srv := &http.Server{
-		Addr:         ":" + port,
-		Handler:      r,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  15 * time.Second,
-	}
+	logger.Log.Info("Server running on port " + cfg.Server.Port)
+	srv := server.New(cfg, r)
 	go func() {
 		if err := srv.ListenAndServe(); err != nil &&
 			err != http.ErrServerClosed {

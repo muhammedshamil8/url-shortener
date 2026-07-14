@@ -25,16 +25,16 @@ type ServerConfig struct {
 func Load() *Config {
 	return &Config{
 		DB: DBConfig{
-			Host:     getEnv("DB_HOST", "localhost"),
-			Port:     getEnv("DB_PORT", "5432"),
-			User:     getEnv("DB_USER", "postgres"),
-			Password: getEnv("DB_PASSWORD", "postgres"),
-			Name:     getEnv("DB_NAME", "url_shortener"),
-			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+			Host:     os.Getenv("DB_HOST"),
+			Port:     os.Getenv("DB_PORT"),
+			User:     os.Getenv("DB_USER"),
+			Password: os.Getenv("DB_PASSWORD"),
+			Name:     os.Getenv("DB_NAME"),
+			SSLMode:  os.Getenv("DB_SSLMODE"),
 		},
 		Server: ServerConfig{
-			Port:    getEnv("APP_PORT", "8080"),
-			BaseURL: getEnv("BASE_URL", "http://localhost:8080/"),
+			Port:    os.Getenv("APP_PORT"),
+			BaseURL: os.Getenv("BASE_URL"),
 		},
 		Env: getEnv("APP_ENV", "development"),
 	}
