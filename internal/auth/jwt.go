@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/muhammedshamil8/url-shortener/internal/models"
 )
 
 func GenerateToken(userID int, email string, secret string, expiry string) (string, error) {
@@ -13,29 +14,27 @@ func GenerateToken(userID int, email string, secret string, expiry string) (stri
 	if err != nil {
 		duration = 24 * time.Hour
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": userID,
-		"email":   email,
-		"exp":     time.Now().Add(duration).Unix(),
-	})
+	claims := &models.Claims{
+		UserID: userID,
+		Email:  email,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))
 }
 
 func ParseToken(tokenString string, secret string) (int, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return []byte(secret), nil
-	})
+	claims, err := ValidateToken(tokenString, secret)
 	if err != nil {
 		return 0, err
 	}
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		return int(claims["user_id"].(float64)), nil
-	}
-	return 0, errors.New("invalid token")
+	return claims.UserID, nil
 }
 
-func ValidateToken(tokenString string, secret string) (jwt.MapClaims, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+func ValidateToken(tokenString string, secret string) (*models.Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &models.Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -46,7 +45,7 @@ func ValidateToken(tokenString string, secret string) (jwt.MapClaims, error) {
 		return nil, err
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+	if claims, ok := token.Claims.(*models.Claims); ok && token.Valid {
 		return claims, nil
 	}
 

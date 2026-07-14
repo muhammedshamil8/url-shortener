@@ -125,28 +125,8 @@ func (h *Handler) RefreshHandler(c *gin.Context) {
 		return
 	}
 
-	userIDVal, ok := claims["user_id"]
-	if !ok {
-		response.Unauthorized(c, "Invalid token claims")
-		return
-	}
-
-	var userID int
-	switch val := userIDVal.(type) {
-	case float64:
-		userID = int(val)
-	case int:
-		userID = val
-	default:
-		response.Unauthorized(c, "Invalid user ID claim type")
-		return
-	}
-
-	email, ok := claims["email"].(string)
-	if !ok {
-		response.Unauthorized(c, "Invalid email claim")
-		return
-	}
+	userID := claims.UserID
+	email := claims.Email
 
 	newAccessToken, err := auth.GenerateToken(userID, email, h.cfg.JWT.AccessTokenSecret, h.cfg.JWT.AccessTokenExpiry)
 	if err != nil {

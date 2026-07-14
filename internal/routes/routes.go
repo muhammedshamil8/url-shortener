@@ -16,6 +16,7 @@ func Setup(r *gin.Engine, h *handlers.Handler, cfg *config.Config) {
 	r.Use(middleware.Logger())
 	rateLimiter := middleware.NewRateLimiter()
 	r.Use(middleware.RateLimit(rateLimiter))
+
 	jwtMiddleware := middleware.AuthMiddleware(cfg)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

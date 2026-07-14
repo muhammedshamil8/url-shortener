@@ -51,3 +51,7 @@ func BadRequest(c *gin.Context, message string) {
 func UnprocessableEntity(c *gin.Context, message string) {
 	Error(c, http.StatusUnprocessableEntity, message)
 }
+
+func Forbidden(c *gin.Context, message string) {
+	Error(c, http.StatusForbidden, message)
+}
