@@ -53,6 +53,11 @@ func main() {
 
 	h := handlers.New(repo, *cfg)
 
+	if err := database.MigrateUserTable(db); err != nil {
+		logger.Log.Error("Failed to migrate database", "error", err)
+		os.Exit(1)
+	}
+
 	if err := database.MigrateUrlTable(db); err != nil {
 		logger.Log.Error("Failed to migrate database", "error", err)
 		os.Exit(1)
