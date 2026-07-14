@@ -6,20 +6,21 @@
 
 A production-ready, high-performance URL shortener built with **Go**, **Gin**, and **PostgreSQL**.
 
-This service demonstrates production-grade Go backend architecture, featuring dependency injection, robust middlewares, comprehensive unit/integration test suites, dynamic pagination/filtering, containerization, and automated CI pipelines.
+This service demonstrates production-grade Go backend architecture, featuring dependency injection, robust middlewares, JWT-based Authentication, Role-Based Access Control (RBAC), comprehensive unit/integration test suites, dynamic pagination/filtering, containerization, and automated CI pipelines.
 
 ---
 
 ## 🚀 Key Features
 
 * **⚡ Core API**: URL shortening, click tracking, custom error responses, and redirects.
+* **🛡️ Security & Authentication**: JWT authentication with Access and Refresh token flow. Role-based route authorization (Admin & Users).
 * **🔍 Search & Filter**: Case-insensitive filtering on original URLs or short codes.
 * **📊 Click & Date Bounds**: Retrieve URLs filtered by click ranges (`min_clicks`, `max_clicks`) and creation dates (`min_date`, `max_date`).
 * **📦 Architecture**: Clean architecture with the Repository pattern, interfaces, and strict Dependency Injection.
-* **🛡️ Security & Reliability**: IP-based rate limiting, CORS configuration, environment validation, and graceful server shutdown.
+* **🛡️ Reliability & Protection**: IP-based rate limiting, CORS configuration, environment validation, and graceful server shutdown.
 * **🩺 Health Probes**: Live (`/live`) and database-connected Ready (`/ready`) endpoints.
 * **📖 Documentation**: Interactive API documentation generated with Swagger UI.
-* **🧪 Testing**: 70%+ test coverage with mock repositories, controller unit tests, and database integration tests.
+* **🧪 Testing**: 75%+ statement test coverage with mock repositories, controller unit tests, and database integration tests.
 
 ---
 
@@ -30,6 +31,7 @@ This service demonstrates production-grade Go backend architecture, featuring de
 | **Language** | Go 1.26 | High-performance compiled backend language |
 | **Web Framework** | Gin | Minimalist, fast HTTP router and middleware engine |
 | **Database** | PostgreSQL 16 | Relational database storage with auto migrations |
+| **Authentication** | JWT (v5) | Token-based secure user sessions and authorization |
 | **API Docs** | Swagger | Auto-generated OpenAPI 2.0 specifications |
 | **Logging** | slog | Structured, leveled logging in JSON format |
 | **CI** | GitHub Actions | Automated lint, vet, and test checks |
@@ -42,12 +44,13 @@ This service demonstrates production-grade Go backend architecture, featuring de
 url-shortener/
 ├── docs/                   # Auto-generated Swagger spec files
 ├── internal/
+│   ├── auth/               # Password hashing and JWT generation/validation
 │   ├── config/             # Environment validation and parsing
 │   ├── database/           # Postgres initialization and migrations
-│   ├── handlers/           # HTTP controllers and routing handlers
+│   ├── handlers/           # HTTP controllers and routing handlers (User, Auth, Admin, URL)
 │   ├── logger/             # Structured slog logger integration
-│   ├── middleware/         # Rate limiter, CORS, request logging, and UUID tracking
-│   ├── models/             # Shared entities and filtering ListOptions
+│   ├── middleware/         # Rate limiter, CORS, request logging, JWT Auth, and Admin authorization
+│   ├── models/             # Shared entities, request/response models, and Claims
 │   ├── repository/         # Postgres queries and database layer
 │   ├── response/           # Consistent, unified JSON response payloads
 │   └── utils/              # Helper functions (e.g., URL validation, shortcode generators)
@@ -79,7 +82,7 @@ The API will be available at `http://localhost:8080`.
    ```bash
    cp .env.example .env
    ```
-   *(Update your DB connection details in `.env`)*
+   *(Update your DB connection details and JWT secrets in `.env`)*
 
 2. Run the application:
    ```bash
@@ -95,53 +98,31 @@ The API will be available at `http://localhost:8080`.
 
 ## 📡 API Reference
 
-### Health check & Docs
-* `GET /live` — Liveness probe (always returns 200)
-* `GET /ready` — Readiness probe (pings database connection)
+### Health Check & Swagger Docs
+* `GET /api/v1/live` — Liveness probe (always returns 200)
+* `GET /api/v1/ready` — Readiness probe (pings database connection)
 * `GET /swagger/index.html` — Swagger UI documentation
 
-### Shorten URL
-* `POST /shorten`
-  * **Payload:**
-    ```json
-    {
-      "url": "https://github.com/muhammedshamil8/url-shortener"
-    }
-    ```
-  * **Response (201):**
-    ```json
-    {
-      "status": "success",
-      "data": {
-        "id": 1,
-        "original_url": "https://github.com/muhammedshamil8/url-shortener",
-        "short_code": "xY7z9P",
-        "short_url": "http://localhost:8080/xY7z9P"
-      },
-      "request_id": "8e3c1a-..."
-    }
-    ```
+### Authentication Endpoints
+* `POST /api/v1/auth/register` — Register a new account.
+* `POST /api/v1/auth/login` — Authenticate and retrieve Access + Refresh Tokens.
+* `POST /api/v1/auth/refresh` — Refresh expired access token using a refresh token.
 
-### Redirect
+### Public Shortener Endpoints
+* `POST /api/v1/shorten` — Create a shortened URL.
 * `GET /{code}` — Redirects with a `302 Found` header to the original URL and increments click counts.
 
-### Delete URL
-* `DELETE /{id}` — Deletes URL matching the database primary ID.
+### User Endpoints (Requires Access Token)
+* `GET /api/v1/me` — Retrieve profile details of authenticated user.
+* `GET /api/v1/my/urls` — Get all shortened URLs belonging to the authenticated user.
+* `DELETE /api/v1/my/urls/:id` — Delete a shortened URL owned by the authenticated user.
 
-### List All URLs (Paginated & Filtered)
-* `GET /urls/all`
-  * **Query Parameters:**
-    | Parameter | Type | Default | Description |
-    | :--- | :--- | :--- | :--- |
-    | `page` | `int` | `1` | Page number |
-    | `limit` | `int` | `20` | Results per page (Max: `100`) |
-    | `sort` | `string` | `created_at` | Sort key (`created_at`, `click_count`, `short_code`) |
-    | `order` | `string` | `DESC` | Sort direction (`ASC`, `DESC`) |
-    | `search` | `string` | `""` | Case-insensitive search on URLs and short codes |
-    | `min_clicks`| `int` | `""` | Filter URLs with clicks `>= min_clicks` |
-    | `max_clicks`| `int` | `""` | Filter URLs with clicks `<= max_clicks` |
-    | `min_date` | `string` | `""` | RFC3339 formatted start date threshold |
-    | `max_date` | `string` | `""` | RFC3339 formatted end date threshold |
+### Admin Endpoints (Requires Admin Access Token)
+* `GET /api/v1/admin/urls` — List and filter all shortened URLs across all users.
+  * **Query Parameters:** `page`, `limit`, `sort`, `order`, `search`, `min_clicks`, `max_clicks`, `min_date`, `max_date`
+* `DELETE /api/v1/admin/urls/:id` — Deletes any shortened URL by ID.
+* `GET /api/v1/admin/users` — List all registered user accounts.
+* `DELETE /api/v1/admin/users/:id` — Remove a user account (and cascade delete their URLs).
 
 ---
 
@@ -158,11 +139,12 @@ The API will be available at `http://localhost:8080`.
 * Multi-stage Docker containerization
 * Makefile scripting for local workflows
 * IP Rate limiting middleware
-* Dynamic pagination, sorting, and filter bounds (click counts, dates, and search queries)
+* Dynamic pagination, sorting, and filter bounds
 * Liveness `/live` and readiness `/ready` probes
 
-### Phase 3 — Scalability & Security 🚧
-* Redis response caching layer
-* JWT session-based Authentication
-* Prometheus metrics exports
-* OpenTelemetry tracing instrumentation
+### Phase 3 — Scalability & Security ✅ / 🚧
+* JWT Session-based Authentication & Token Refresh ✅
+* Role-based Access Control (RBAC) (Admin/User separation) ✅
+* Redis response caching layer 🚧
+* Prometheus metrics exports 🚧
+* OpenTelemetry tracing instrumentation 🚧

@@ -142,18 +142,20 @@ The goal is to learn how production Go backend services are designed, tested, do
 - [x] Sorting
 - [x] Filtering
 
+---
+
 # Phase 3 — Production Features 🚧 
 
 ## Performance
 - [ ] Redis
 - [ ] Response Caching
 
-## Authentication
-- [ ] User Registration
-- [ ] Login
-- [ ] JWT Authentication
-- [ ] Refresh Tokens
-- [ ] Role-Based Access Control (RBAC)
+## Authentication ✅
+- [x] User Registration
+- [x] Login
+- [x] JWT Authentication
+- [x] Refresh Tokens
+- [x] Role-Based Access Control (RBAC) (Admin/User separation)
 
 ## Observability
 - [ ] Prometheus Metrics
