@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/muhammedshamil8/url-shortener/internal/config"
 	"github.com/muhammedshamil8/url-shortener/internal/models"
 	"github.com/muhammedshamil8/url-shortener/internal/response"
 	"github.com/muhammedshamil8/url-shortener/internal/utils"
@@ -22,18 +22,40 @@ const (
 
 type Handler struct {
     repo URLRepository
+	cfg config.Config
 }
 
-func New(repo URLRepository) *Handler {
-	return &Handler{repo: repo}
+func New(repo URLRepository,cfg config.Config) *Handler {
+	return &Handler{repo: repo,cfg: cfg}
 }
 
+// HealthCheck godoc
+//
+//	@Summary		Health Check
+//	@Description	Check if the API is running
+//	@Tags			Health
+//	@Produce		json
+//	@Success		200	{object}	models.SuccessResponse
+//	@Failure		500	{object}	models.ErrorResponse
+//	@Router			/health/api [get]
 func (h *Handler)HealthCheckHandler(c *gin.Context) {
 	response.OK(c, gin.H{
 		"message": "Welcome to URL Shortener Service",
 	})
 }
 
+// Shorten godoc
+//
+//	@Summary	Shorten a URL
+//	@Description	Create a short URL from a long URL
+//	@Tags	URLs
+//	@Accept	json
+//	@Produce	json
+//  @Param	request	body	models.ShortenRequest	true	"Request body"
+//	@Success	200	{object}	models.SuccessResponse
+//	@Failure	400	{object}	models.ErrorResponse
+//	@Failure	500	{object}	models.ErrorResponse
+//	@Router	/shorten [post]
 func (h *Handler)ShortenHandler(c *gin.Context) {
 	var req models.ShortenRequest
 	if err := c.BindJSON(&req); err != nil {
@@ -65,7 +87,7 @@ func (h *Handler)ShortenHandler(c *gin.Context) {
 			"id":           id,
 			"original_url": req.URL,
 			"short_code":   shortCode,
-			"short_url":    os.Getenv("BASE_URL") + shortCode,
+			"short_url":    h.cfg.Server.BaseURL + "/" + shortCode,
 		})
 		return
 	}
@@ -74,6 +96,17 @@ func (h *Handler)ShortenHandler(c *gin.Context) {
 
 }
 
+// Redirect godoc
+//
+//	@Summary	Redirect to original URL
+//	@Description	Redirect to original URL based on short code
+//	@Tags	URLs
+//	@Produce	json
+//	@Param	code	path	string	true	"Short code"
+//  @Success 303 {string} string "Redirect"
+//	@Failure	404	{object}	models.ErrorResponse
+//	@Failure	500	{object}	models.ErrorResponse
+//	@Router	/{code} [get]
 func (h *Handler)RedirectHandler(c *gin.Context) {
 	code := c.Param("code")
 	url, err := h.repo.GetURLByCode(code)
@@ -92,6 +125,18 @@ func (h *Handler)RedirectHandler(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, url)
 }
 
+// Delete godoc
+//
+//	@Summary	Delete a URL
+//	@Description	Delete a URL based on id
+//	@Tags	URLs 
+//	@Produce	json
+//	@Param	id	path	int	true	"URL ID"
+//	@Success	200	{object}	models.SuccessResponse
+//	@Failure	400	{object}	models.ErrorResponse
+//	@Failure	404	{object}	models.ErrorResponse
+//	@Failure	500	{object}	models.ErrorResponse
+//	@Router	/{id} [delete]
 func (h *Handler)DeleteHandler(c *gin.Context) {
 	idstr := c.Param("id")
 	id, err := strconv.Atoi(idstr)
@@ -109,6 +154,16 @@ func (h *Handler)DeleteHandler(c *gin.Context) {
 	})
 }
 
+// ListAll godoc
+//
+//	@Summary	List all URLs
+//	@Description	List all URLs
+//	@Tags	URLs 
+//	@Produce	json
+//	@Success	200	{object}	models.SuccessResponse
+//	@Failure	404	{object}	models.ErrorResponse
+//	@Failure	500	{object}	models.ErrorResponse
+//	@Router	/urls/all [get]
 func (h *Handler)ListAllHandler(c *gin.Context) {
 	urls, err := h.repo.GetAllURLs()
 	if err != nil {

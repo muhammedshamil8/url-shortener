@@ -1,7 +1,16 @@
+// @title URL Shortener API
+// @version 1.0
+// @description A production-ready URL shortener built with Go and Gin.
+// @BasePath /
 package main
 
 import (
+	"context"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -11,6 +20,10 @@ import (
 	"github.com/muhammedshamil8/url-shortener/internal/logger"
 	"github.com/muhammedshamil8/url-shortener/internal/middleware"
 	"github.com/muhammedshamil8/url-shortener/internal/repository"
+
+	_ "github.com/muhammedshamil8/url-shortener/docs"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func main() {
@@ -32,7 +45,7 @@ func main() {
 
 	repo := repository.New(db)
 
-	h := handlers.New(repo)
+	h := handlers.New(repo, *cfg)
 
 	if err := database.MigrateUrlTable(db); err != nil {
 		logger.Log.Error("Failed to migrate database", "error", err)
@@ -49,6 +62,7 @@ func main() {
 	r.Use(middleware.RequestID())
 	r.Use(middleware.Logger())
 
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/health/api", h.HealthCheckHandler)
 	r.POST("/shorten", h.ShortenHandler)
 	r.GET("/urls/all", h.ListAllHandler)
@@ -63,9 +77,42 @@ func main() {
 	}
 
 	logger.Log.Info("Server running on port " + port)
-	if err := r.Run(":" + port); err != nil {
-		logger.Log.Error("Failed to start server", "error", err)
+	srv := &http.Server{
+		Addr:         ":" + port,
+		Handler:      r,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  15 * time.Second,
+	}
+	go func() {
+		if err := srv.ListenAndServe(); err != nil &&
+			err != http.ErrServerClosed {
+
+			logger.Log.Error("server error", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	// -------------------------------------------------------
+	// 2️⃣ Graceful shutdown (listen for Ctrl+C)
+	// -------------------------------------------------------
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Wait for signal
+	<-quit
+	logger.Log.Info("Shutting down server...")
+
+	// Create a timeout context
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Attempt graceful shutdown
+	if err := srv.Shutdown(ctx); err != nil {
+		logger.Log.Error("Server forced to shutdown", "error", err)
 		os.Exit(1)
 	}
+
+	logger.Log.Info("Server exited properly")
 
 }

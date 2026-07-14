@@ -9,12 +9,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/muhammedshamil8/url-shortener/internal/config"
 	"github.com/muhammedshamil8/url-shortener/internal/models"
 )
 
 func setupTestRouter(repo URLRepository) *gin.Engine {
 	r := gin.Default()
-	h := New(repo)
+	h := New(repo, config.Config{})
 
 	r.GET("/health/api", h.HealthCheckHandler)
 	r.POST("/shorten", h.ShortenHandler)

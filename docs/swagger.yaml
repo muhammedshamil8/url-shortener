@@ -1,0 +1,99 @@
+basePath: /
+info:
+  contact: {}
+  description: A production-ready URL shortener built with Go and Gin.
+  title: URL Shortener API
+  version: "1.0"
+paths:
+  /:code:
+    get:
+      description: Redirect to original URL based on short code
+      parameters:
+      - description: Short code
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "302":
+          description: Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Redirect to original URL
+      tags:
+      - URL Shortener
+  /:id:
+    delete:
+      description: Delete a URL based on id
+      parameters:
+      - description: URL ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a URL
+      tags:
+      - URL Shortener
+  /health/api:
+    get:
+      description: Check if the API is running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Health Check
+      tags:
+      - Health
+  /shorten:
+    post:
+      consumes:
+      - application/json
+      description: Create a short URL from a long URL
+      parameters:
+      - description: Original URL
+        in: body
+        name: url
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Shorten a URL
+      tags:
+      - URL Shortener
+  /urls/all:
+    get:
+      description: List all URLs
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List all URLs
+      tags:
+      - URL Shortener
+swagger: "2.0"
