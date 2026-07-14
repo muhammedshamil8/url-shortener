@@ -1,11 +1,42 @@
 basePath: /
+definitions:
+  models.ErrorResponse:
+    properties:
+      message:
+        example: Invalid URL
+        type: string
+      request_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  models.ShortenRequest:
+    properties:
+      url:
+        example: https://google.com
+        type: string
+    required:
+    - url
+    type: object
+  models.SuccessResponse:
+    properties:
+      data: {}
+      request_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      status:
+        example: success
+        type: string
+    type: object
 info:
   contact: {}
   description: A production-ready URL shortener built with Go and Gin.
   title: URL Shortener API
   version: "1.0"
 paths:
-  /:code:
+  /{code}:
     get:
       description: Redirect to original URL based on short code
       parameters:
@@ -17,15 +48,22 @@ paths:
       produces:
       - application/json
       responses:
-        "302":
-          description: Found
+        "303":
+          description: Redirect
           schema:
-            additionalProperties: true
-            type: object
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Redirect to original URL
       tags:
-      - URL Shortener
-  /:id:
+      - URLs
+  /{id}:
     delete:
       description: Delete a URL based on id
       parameters:
@@ -40,11 +78,22 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Delete a URL
       tags:
-      - URL Shortener
+      - URLs
   /health/api:
     get:
       description: Check if the API is running
@@ -54,8 +103,11 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/models.SuccessResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Health Check
       tags:
       - Health
@@ -65,23 +117,30 @@ paths:
       - application/json
       description: Create a short URL from a long URL
       parameters:
-      - description: Original URL
+      - description: Request body
         in: body
-        name: url
+        name: request
         required: true
         schema:
-          type: string
+          $ref: '#/definitions/models.ShortenRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Shorten a URL
       tags:
-      - URL Shortener
+      - URLs
   /urls/all:
     get:
       description: List all URLs
@@ -91,9 +150,16 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/models.SuccessResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: List all URLs
       tags:
-      - URL Shortener
+      - URLs
 swagger: "2.0"

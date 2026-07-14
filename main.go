@@ -29,13 +29,11 @@ import (
 func main() {
 	logger.Init()
 
-	logger.Log.Info("Server starting")
-	err := godotenv.Load()
-	if err != nil {
-		logger.Log.Error("Failed to load .env", "error", err)
-		os.Exit(1)
-	}
+	_ = godotenv.Load()
 	cfg := config.Load()
+
+	logger.Log.Info("Server starting", "environment", cfg.Env)
+
 	db, err := database.InitDB(cfg.DB)
 	if err != nil {
 		logger.Log.Error("Failed to initialize database", "error", err)
@@ -93,9 +91,6 @@ func main() {
 		}
 	}()
 
-	// -------------------------------------------------------
-	// 2️⃣ Graceful shutdown (listen for Ctrl+C)
-	// -------------------------------------------------------
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
