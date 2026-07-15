@@ -6,26 +6,30 @@
 
 A production-ready, full-stack high-performance URL shortener built with **Go (Gin)**, **PostgreSQL**, **Redis**, and **React (Vite + TypeScript + Tailwind CSS)**.
 
-This service showcases clean-architecture development featuring dependency injection, JWT-based Authentication, Role-Based Access Control (RBAC), Redis-based response caching, comprehensive test suites, dynamic pagination/filtering, containerization, and automated CI pipelines.
+This service showcases clean-architecture development featuring dependency injection, JWT-based Authentication, Role-Based Access Control (RBAC), Redis-based response caching, comprehensive test suites, dynamic pagination/filtering, containerization, and automated CI/CD pipelines.
 
 ## 📐 System Architecture
 
 ```text
-                React
-                  │
-             Axios Client
-                  │
-                  ▼
-            Gin HTTP Server
-      ┌──────────┼───────────┐
-      ▼          ▼           ▼
- Middleware   Handlers   Swagger
-                  │
-                  ▼
-            Repository Layer
-          ┌────────┴────────┐
-          ▼                 ▼
-     PostgreSQL         Redis Cache
+                                  Browser Client (HTTPS)
+                                            │
+                                            ▼
+                                     Cloudflare Edge
+                                            │
+                                            ▼ (Port 443 SSL)
+                                    Nginx Reverse Proxy
+                                     ┌──────┴──────┐
+                                     ▼             ▼
+                            React Frontend      Go API (Port 8080)
+                             (Static Nginx)   ┌──────┼──────┐
+                                              ▼      ▼      ▼
+                                         Middleware Handlers Swagger
+                                                     │
+                                                     ▼
+                                              Repository Layer
+                                            ┌────────┴────────┐
+                                            ▼                 ▼
+                                       PostgreSQL         Redis Cache
 ```
 
 ---
@@ -42,6 +46,7 @@ This service showcases clean-architecture development featuring dependency injec
 * **🩺 Health Probes**: Live (`/live`) and database-connected Ready (`/ready`) endpoints.
 * **📖 Interactive Docs**: API documentation generated with Swagger UI.
 * **🧪 Testing**: 75%+ statement test coverage with mock repositories, controller unit tests, and database integration tests.
+* **🔄 Automated CI/CD**: Full automated workflows to compile/test code, build multi-stage Docker images, publish to Docker Hub, generate GitHub Releases, and auto-deploy directly to VPS over SSH.
 
 ---
 
@@ -49,7 +54,7 @@ This service showcases clean-architecture development featuring dependency injec
 
 | Layer | Technology | Description |
 | :--- | :--- | :--- |
-| **Backend Language** | Go 1.26.3 | High-performance compiled backend language |
+| **Backend Language** | Go 1.26 | High-performance compiled backend language |
 | **Web Framework** | Gin | Minimalist, fast HTTP router and middleware engine |
 | **Frontend Framework** | React 18 & TypeScript 5 | Component-based interactive UI with static typing |
 | **Build Tooling (Web)** | Vite 5 | Fast local development server and optimized bundles |
@@ -59,7 +64,7 @@ This service showcases clean-architecture development featuring dependency injec
 | **Authentication** | JWT (v5) & bcrypt | Token-based secure user sessions and password hashing |
 | **API Docs** | Swagger | Auto-generated OpenAPI 2.0 specifications |
 | **Logging** | slog | Structured, leveled logging in JSON format |
-| **CI** | GitHub Actions | Automated lint, vet, and test checks |
+| **CI/CD** | GitHub Actions | Automated lint, test, docker build, release, and SSH deploy |
 
 ---
 
@@ -68,22 +73,25 @@ This service showcases clean-architecture development featuring dependency injec
 ```text
 url-shortener/
 ├── .github/
-│   └── workflows/          # GitHub Actions CI workflow files
+│   └── workflows/          # GitHub Actions CI/CD workflows
+│       ├── go-tests.yml        # PR and push test checker
+│       └── release-deploy.yml  # Tag-based build, release, and deploy pipeline
+├── deploy/                 # Production deployment assets
+│   └── nginx/              # Nginx proxy routing configurations
+│       └── default.conf
 ├── docs/                   # Architectural & API documentation
 │   ├── api.md              # REST API reference manual
 │   ├── architecture.md     # System architecture overview
 │   ├── deployment.md       # Production deployment instructions
-│   ├── monitoring.md       # Observability, logs, and metrics reference
-│   ├── docs.go             # Auto-generated Swagger spec configurations
-│   ├── swagger.json        
-│   └── swagger.yaml        
-├── frontend/               # React + Vite + TypeScript + Tailwind CSS Frontend
+│   └── monitoring.md       # Observability, logs, and metrics reference
+├── frontend/               # React + Vite + TypeScript Frontend
 │   ├── src/
 │   │   ├── components/     # Reusable layout and notification components
 │   │   ├── views/          # Pages (Landing, Login, Register, User/Admin Dashboards)
 │   │   ├── api.ts          # Axios client with interceptors for refresh token flow
 │   │   ├── router.tsx      # Hash router for SPA navigation
 │   │   └── App.tsx         # Root view and state manager
+│   ├── Dockerfile          # Multi-stage production Nginx & Dev builder
 │   ├── package.json        # Frontend scripts and package dependencies
 │   └── vite.config.ts      # Vite configuration (includes API dev proxy)
 ├── internal/
@@ -91,18 +99,19 @@ url-shortener/
 │   ├── cache/              # Redis response caching abstractions
 │   ├── config/             # Environment validation and parsing
 │   ├── database/           # Postgres initialization and migrations
-│   ├── handlers/           # HTTP controllers and routing handlers (User, Auth, Admin, URL)
+│   ├── handlers/           # HTTP controllers and routing handlers
 │   ├── logger/             # Structured slog logger integration
-│   ├── middleware/         # Rate limiter, CORS, request logging, JWT Auth, and Admin auth
+│   ├── middleware/         # Rate limiter, CORS, request logging, JWT Auth
 │   ├── models/             # Shared entities, request/response models, and Claims
 │   ├── redis/              # Redis client initialization
 │   ├── repository/         # Postgres queries and database layer
 │   ├── response/           # Consistent, unified JSON response payloads
 │   └── utils/              # Helper functions (e.g., URL validation, shortcode generators)
 ├── .env.example            # Environment template configuration
-├── Dockerfile              # Multi-stage optimized builder image
-├── docker-compose.yml      # Multi-container orchestration config (App, Postgres, Redis)
-├── Makefile                # Shorthand CLI automation for backend
+├── Dockerfile              # Multi-stage optimized builder image for backend API
+├── docker-compose.dev.yml  # Multi-container orchestration config for local development
+├── docker-compose.prod.yml # Production multi-container orchestration config using Docker Hub images
+├── Makefile                # Shorthand CLI automation for development
 ├── LICENSE                 # MIT License file
 ├── CONTRIBUTING.md         # Guide on how to contribute
 ├── CHANGELOG.md            # Release changelog history
@@ -118,20 +127,21 @@ url-shortener/
 ### Prerequisites
 * [Go 1.26+](https://golang.org/dl/)
 * [Node.js 18+](https://nodejs.org/) & `npm`
-* [PostgreSQL 16+](https://www.postgresql.org/) OR [Docker](https://www.docker.com/)
+* [Docker & Compose](https://www.docker.com/)
 
 ---
 
 ### Running the Services
 
-#### 1. Spin up Backend & Databases with Docker (Recommended)
-You can start the backend service alongside Postgres and Redis instantly:
+#### 1. Running in Development (Local Docker Compose)
+You can start the backend service alongside Postgres, Redis, and the hot-reloaded Frontend development server:
 ```bash
-docker-compose up --build
+docker compose -f docker-compose.dev.yml up --build
 ```
-The backend API will be available at `http://localhost:8080`.
+* The backend API will be available at `http://localhost:8080`.
+* The frontend will be available at `http://localhost:5173`.
 
-#### 2. Run Backend Locally
+#### 2. Running Backend Locally (No Docker)
 1. Clone the repository and configure your environment:
    ```bash
    cp .env.example .env
@@ -149,7 +159,7 @@ The backend API will be available at `http://localhost:8080`.
    make test
    ```
 
-#### 3. Run Frontend Locally
+#### 3. Running Frontend Locally (No Docker)
 1. Navigate to the `frontend` directory:
    ```bash
    cd frontend
@@ -162,20 +172,52 @@ The backend API will be available at `http://localhost:8080`.
    ```bash
    npm run dev
    ```
-   The frontend will be served at `http://localhost:3000`.
+   The frontend will be served at `http://localhost:5173`.
 
-#### 4. Create an Admin User
-To access the Admin Dashboard features, you can create a user with the `admin` role using the CLI utility:
-* **Interactive Mode:**
-  ```bash
-  make create-admin
-  ```
-  *(You will be prompted to enter the username, email, and password securely)*
+---
 
-* **Non-Interactive Mode (with flags):**
-  ```bash
-  go run scripts/create_admin.go -username <username> -email <email> -password <password>
-  ```
+### 🛡️ Admin Account Setup
+
+#### In Development
+To access the Admin Dashboard features, you can create a user with the `admin` role using the interactive CLI utility locally:
+```bash
+make create-admin
+```
+
+#### In Production (Docker VM)
+To run the admin creation script on your production VM without installing Go locally on the host, run this temporary Docker container command inside your project folder (`~/url-shortener`):
+```bash
+docker run -it --rm \
+  --network url-shortener_backend \
+  --env-file .env \
+  -e DB_HOST=postgres \
+  -v $(pwd):/app \
+  -w /app \
+  golang:1.26-alpine \
+  go run scripts/create_admin.go
+```
+
+---
+
+## 🚀 CI/CD & Deployments
+
+The project features a fully automated Git Tag-based CI/CD pipeline using GitHub Actions. 
+
+### Triggering a Release
+To release and deploy a new version of the app (e.g. `v1.0.3`):
+```bash
+git tag v1.0.3
+git push origin v1.0.3
+```
+
+This triggers the `.github/workflows/release-deploy.yml` pipeline which:
+1. Runs all Go tests and validates compilation.
+2. Builds optimized Docker images for the API backend and Frontend (Nginx static proxy).
+3. Pushes the built images to Docker Hub under the version tag and `latest`.
+4. Creates a GitHub Release with build logs.
+5. Connects to the VM via SSH, checks out the tag configuration, pulls the new images, and safely restarts the stack.
+
+For detailed VPS setup instructions, see the [Deployment Guide](docs/deployment.md).
 
 ---
 
@@ -192,7 +234,7 @@ To access the Admin Dashboard features, you can create a user with the `admin` r
 * `POST /api/v1/auth/refresh` — Refresh expired access token using the refresh token.
 
 ### Public Shortener Endpoints
-* `POST /api/v1/shorten` — Create a shortened URL (can optionally include authorization headers to link to user profiles).
+* `POST /api/v1/shorten` — Create a shortened URL.
 * `GET /{code}` — Redirects to original URL with a `302 Found` status and increments the click count.
 
 ### User Endpoints (Requires Access Token)
@@ -203,7 +245,6 @@ To access the Admin Dashboard features, you can create a user with the `admin` r
 
 ### Admin Endpoints (Requires Admin Access Token)
 * `GET /api/v1/admin/urls` — List and filter all shortened URLs across all users.
-  * **Query Parameters:** `page`, `limit`, `sort`, `order`, `search`, `min_clicks`, `max_clicks`, `min_date`, `max_date`
 * `DELETE /api/v1/admin/urls/:id` — Deletes any shortened URL by ID.
 * `GET /api/v1/admin/users` — List all registered user accounts.
 * `DELETE /api/v1/admin/users/:id` — Remove a user account (and cascade deletes their URLs).
@@ -237,9 +278,9 @@ To access the Admin Dashboard features, you can create a user with the `admin` r
 * Axios API integration with automatic token refreshing ✅
 * Dynamic pagination, query searches, and filters UI ✅
 
-### Phase 5 — Cloud Deployment 🚧
-* Cloudflare DNS & SSL certificate configuration
-* Production deployment to VPS or PaaS (Railway, Render, etc.)
+### Phase 5 — Cloud Deployment ✅
+* Cloudflare DNS, SSL & Proxy setup ✅
+* Automated CI/CD deployments directly to VPS over SSH ✅
 
 ### Phase 6 — Advanced Features 🚧
 * Malicious URL checking/protection

@@ -11,6 +11,9 @@ coverage.out
 *.so
 *.dylib
 
+# learning stuffs
+learning/
+
 # Go test
 *.test
 
