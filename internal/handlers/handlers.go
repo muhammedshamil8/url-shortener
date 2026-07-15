@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -87,7 +88,7 @@ func (h *Handler) ShortenHandler(c *gin.Context) {
 			"id":           id,
 			"original_url": req.URL,
 			"short_code":   shortCode,
-			"short_url":    h.cfg.Server.BaseURL + "/" + shortCode,
+			"short_url":    strings.TrimSuffix(h.cfg.Server.BaseURL, "/") + "/" + shortCode,
 		})
 		return
 	}
