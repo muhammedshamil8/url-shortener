@@ -67,7 +67,16 @@ This service showcases clean-architecture development featuring dependency injec
 
 ```text
 url-shortener/
-├── docs/                   # Auto-generated Swagger spec files
+├── .github/
+│   └── workflows/          # GitHub Actions CI workflow files
+├── docs/                   # Architectural & API documentation
+│   ├── api.md              # REST API reference manual
+│   ├── architecture.md     # System architecture overview
+│   ├── deployment.md       # Production deployment instructions
+│   ├── monitoring.md       # Observability, logs, and metrics reference
+│   ├── docs.go             # Auto-generated Swagger spec configurations
+│   ├── swagger.json        
+│   └── swagger.yaml        
 ├── frontend/               # React + Vite + TypeScript + Tailwind CSS Frontend
 │   ├── src/
 │   │   ├── components/     # Reusable layout and notification components
@@ -90,11 +99,15 @@ url-shortener/
 │   ├── repository/         # Postgres queries and database layer
 │   ├── response/           # Consistent, unified JSON response payloads
 │   └── utils/              # Helper functions (e.g., URL validation, shortcode generators)
-├── .github/
-│   └── workflows/          # GitHub Actions CI workflow files
-├── Makefile                # Shorthand CLI automation for backend
-├── docker-compose.yml      # Multi-container orchestration config (App, Postgres, Redis)
+├── .env.example            # Environment template configuration
 ├── Dockerfile              # Multi-stage optimized builder image
+├── docker-compose.yml      # Multi-container orchestration config (App, Postgres, Redis)
+├── Makefile                # Shorthand CLI automation for backend
+├── LICENSE                 # MIT License file
+├── CONTRIBUTING.md         # Guide on how to contribute
+├── CHANGELOG.md            # Release changelog history
+├── CODE_OF_CONDUCT.md      # Contributor Covenant Code of Conduct
+├── SECURITY.md             # Security policy and disclosure process
 └── main.go                 # Application bootstrap entrypoint
 ```
 
