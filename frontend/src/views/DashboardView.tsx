@@ -29,7 +29,7 @@ export default function DashboardView({ user, apiFetch }: DashboardViewProps) {
       const res = await apiFetch('/api/v1/my/urls');
       if (res.ok) {
         const data = await res.json();
-        const list = (data.data || []) as ShortenedURL[];
+        const list = (data.data.urls || []) as ShortenedURL[];
         const clicks = list.reduce((sum, item) => sum + (item.click_count || 0), 0);
         setStats({ totalUrls: list.length, totalClicks: clicks });
       }

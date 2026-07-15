@@ -600,3 +600,18 @@ AS
 - [ ] Partitioning
 - [ ] Replication
 - [ ] Performance Tuning
+
+
+<!-- 
+
+docker run -it --rm \
+  --network url-shortener_backend \
+  --env-file .env \
+  -e DB_HOST=postgres \
+  -v $(pwd):/app \
+  -w /app \
+  golang:1.26-alpine \
+  go run scripts/create_admin.go
+
+
+ -->

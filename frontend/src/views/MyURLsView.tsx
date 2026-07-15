@@ -25,7 +25,7 @@ export default function MyURLsView({ apiFetch }: MyURLsViewProps) {
       const res = await apiFetch('/api/v1/my/urls');
       if (res.ok) {
         const data = await res.json();
-        setUrls(data.data || []);
+        setUrls(data.data.urls || []);
       }
     } catch (e) {
       showToast("Failed to fetch URLs", "error");

@@ -35,13 +35,13 @@ export default function AdminView({ apiFetch }: AdminViewProps) {
         const res = await apiFetch('/api/v1/admin/urls?limit=100');
         if (res.ok) {
           const data = await res.json();
-          setUrls(data.data || []);
+          setUrls(data.data.urls || []);
         }
       } else {
         const res = await apiFetch('/api/v1/admin/users');
         if (res.ok) {
           const data = await res.json();
-          setUsers(data.users || []);
+          setUsers(data.data.users || []);
         }
       }
     } catch (e) {
