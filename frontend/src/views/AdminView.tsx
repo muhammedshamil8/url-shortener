@@ -2,10 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { Trash2, UserX } from 'lucide-react';
 import { useToast } from '../components/Toast';
 
-export default function AdminView({ apiFetch }) {
-  const [activeSubTab, setActiveSubTab] = useState('urls');
-  const [urls, setUrls] = useState([]);
-  const [users, setUsers] = useState([]);
+interface AdminViewProps {
+  apiFetch: (endpoint: string, options?: RequestInit) => Promise<Response>;
+}
+
+interface ShortenedURL {
+  id: number;
+  short_code: string;
+  original_url: string;
+  click_count?: number;
+  created_at: string;
+}
+
+interface UserProfile {
+  id: number;
+  username: string;
+  email: string;
+  created_at: string;
+}
+
+export default function AdminView({ apiFetch }: AdminViewProps) {
+  const [activeSubTab, setActiveSubTab] = useState<'urls' | 'users'>('urls');
+  const [urls, setUrls] = useState<ShortenedURL[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const showToast = useToast();
 
@@ -32,7 +51,7 @@ export default function AdminView({ apiFetch }) {
     }
   };
 
-  const handleDeleteUrl = async (id) => {
+  const handleDeleteUrl = async (id: number) => {
     if (!confirm("Are you sure you want to delete this URL?")) return;
     try {
       const res = await apiFetch(`/api/v1/admin/urls/${id}`, { method: 'DELETE' });
@@ -47,7 +66,7 @@ export default function AdminView({ apiFetch }) {
     }
   };
 
-  const handleDeleteUser = async (id) => {
+  const handleDeleteUser = async (id: number) => {
     if (!confirm("Deleting a user will cascade delete all of their shortened URLs. Proceed?")) return;
     try {
       const res = await apiFetch(`/api/v1/admin/users/${id}`, { method: 'DELETE' });
@@ -182,7 +201,8 @@ export default function AdminView({ apiFetch }) {
                 </tbody>
               </table>
             </div>
-          )}
+          )
+        )}
       </div>
     </div>
   );

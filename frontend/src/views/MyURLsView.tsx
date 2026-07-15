@@ -2,8 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { Link2Off, Copy, Trash2 } from 'lucide-react';
 import { useToast } from '../components/Toast';
 
-export default function MyURLsView({ apiFetch }) {
-  const [urls, setUrls] = useState([]);
+interface MyURLsViewProps {
+  apiFetch: (endpoint: string, options?: RequestInit) => Promise<Response>;
+}
+
+interface ShortenedURL {
+  id: number;
+  short_code: string;
+  original_url: string;
+  click_count?: number;
+  created_at: string;
+}
+
+export default function MyURLsView({ apiFetch }: MyURLsViewProps) {
+  const [urls, setUrls] = useState<ShortenedURL[]>([]);
   const [loading, setLoading] = useState(true);
   const showToast = useToast();
 
@@ -22,7 +34,7 @@ export default function MyURLsView({ apiFetch }) {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this URL?")) return;
 
     try {
@@ -42,7 +54,7 @@ export default function MyURLsView({ apiFetch }) {
     fetchUrls();
   }, []);
 
-  const copyToClipboard = (text) => {
+  const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     showToast("Copied to clipboard!", "success");
   };

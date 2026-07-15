@@ -1,14 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, FormEvent } from 'react';
 import { Link2, LayoutDashboard, ArrowRight, Copy, ExternalLink, Link } from 'lucide-react';
 import { useToast } from '../components/Toast';
 
-export default function LandingView({ user, apiFetch, navigate }) {
+export interface User {
+  username: string;
+  email: string;
+  role: string;
+  accessToken: string;
+  refreshToken: string;
+}
+
+interface LandingViewProps {
+  user: User | null;
+  apiFetch: (endpoint: string, options?: RequestInit) => Promise<Response>;
+  navigate: (toHash: string) => void;
+}
+
+interface ShortenedURL {
+  id: number;
+  short_code: string;
+  original_url: string;
+  short_url: string;
+}
+
+export default function LandingView({ user, apiFetch, navigate }: LandingViewProps) {
   const [urlInput, setUrlInput] = useState('');
-  const [shortenedResult, setShortenedResult] = useState(null);
+  const [shortenedResult, setShortenedResult] = useState<ShortenedURL | null>(null);
   const [loading, setLoading] = useState(false);
   const showToast = useToast();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!urlInput.trim()) return;
 
@@ -34,7 +55,7 @@ export default function LandingView({ user, apiFetch, navigate }) {
     }
   };
 
-  const copyToClipboard = (text) => {
+  const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     showToast("Copied to clipboard!", "success");
   };

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { ToastProvider, useToast } from './components/Toast';
 import { Link, LayoutDashboard, Link2, ShieldAlert, LogOut } from 'lucide-react';
 
-import LandingView from './views/LandingView';
+import LandingView, { User } from './views/LandingView';
 import LoginView from './views/LoginView';
 import RegisterView from './views/RegisterView';
 import DashboardView from './views/DashboardView';
@@ -10,7 +10,7 @@ import MyURLsView from './views/MyURLsView';
 import AdminView from './views/AdminView';
 
 function AppContent() {
-  const [user, setUser] = useState(() => {
+  const [user, setUser] = useState<User | null>(() => {
     const stored = localStorage.getItem('sn_user');
     return stored ? JSON.parse(stored) : null;
   });
@@ -23,11 +23,11 @@ function AppContent() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  const navigate = (toHash) => {
+  const navigate = (toHash: string) => {
     window.location.hash = toHash;
   };
 
-  const handleLoginSuccess = (userData) => {
+  const handleLoginSuccess = (userData: User) => {
     setUser(userData);
     localStorage.setItem('sn_user', JSON.stringify(userData));
     navigate('#/dashboard');
@@ -41,10 +41,10 @@ function AppContent() {
   };
 
   // Simple fetch wrapper with auth header and auto refresh
-  const apiFetch = async (endpoint, options = {}) => {
-    const headers = {
+  const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...(options.headers || {}),
+      ...(options.headers as Record<string, string> || {}),
     };
 
     if (user && user.accessToken) {
@@ -123,8 +123,16 @@ function AppContent() {
   return renderRoute();
 }
 
+interface DashboardLayoutProps {
+  user: User;
+  activeTab: string;
+  onLogout: () => void;
+  navigate: (toHash: string) => void;
+  children: ReactNode;
+}
+
 // Sidebar Layout Wrapper
-function DashboardLayout({ user, activeTab, onLogout, navigate, children }) {
+function DashboardLayout({ user, activeTab, onLogout, navigate, children }: DashboardLayoutProps) {
   return (
     <div className="flex-1 flex flex-col md:flex-row">
       {/* Sidebar */}
@@ -202,7 +210,7 @@ function DashboardLayout({ user, activeTab, onLogout, navigate, children }) {
   );
 }
 
-function RedirectView({ to }) {
+function RedirectView({ to }: { to: string }) {
   useEffect(() => {
     window.location.hash = to;
   }, [to]);

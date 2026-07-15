@@ -1,10 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, FormEvent } from 'react';
 import { Link2, BarChart3, PlusCircle, ArrowRight, Copy, ExternalLink } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import { User } from './LandingView';
 
-export default function DashboardView({ user, apiFetch }) {
+interface DashboardViewProps {
+  user: User;
+  apiFetch: (endpoint: string, options?: RequestInit) => Promise<Response>;
+}
+
+interface ShortenedURL {
+  id: number;
+  short_code: string;
+  original_url: string;
+  short_url: string;
+  click_count?: number;
+  created_at?: string;
+}
+
+export default function DashboardView({ user, apiFetch }: DashboardViewProps) {
   const [urlInput, setUrlInput] = useState('');
-  const [shortenedResult, setShortenedResult] = useState(null);
+  const [shortenedResult, setShortenedResult] = useState<ShortenedURL | null>(null);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({ totalUrls: 0, totalClicks: 0 });
   const showToast = useToast();
@@ -14,7 +29,7 @@ export default function DashboardView({ user, apiFetch }) {
       const res = await apiFetch('/api/v1/my/urls');
       if (res.ok) {
         const data = await res.json();
-        const list = data.data || [];
+        const list = (data.data || []) as ShortenedURL[];
         const clicks = list.reduce((sum, item) => sum + (item.click_count || 0), 0);
         setStats({ totalUrls: list.length, totalClicks: clicks });
       }
@@ -25,7 +40,7 @@ export default function DashboardView({ user, apiFetch }) {
     fetchStats();
   }, []);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!urlInput.trim()) return;
 
@@ -52,7 +67,7 @@ export default function DashboardView({ user, apiFetch }) {
     }
   };
 
-  const copyToClipboard = (text) => {
+  const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     showToast("Copied to clipboard!", "success");
   };
