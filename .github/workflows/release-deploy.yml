@@ -129,9 +129,8 @@ jobs:
             cd /root/url-shortener
             
             # Fetch latest repository files (to get latest compose config and Nginx conf)
-            git fetch --all
-            git checkout main
-            git pull origin main
+            git fetch --all --tags
+            git checkout tags/${{ github.ref_name }}
 
             # Deploy with the new tag
             export TAG=${{ github.ref_name }}
