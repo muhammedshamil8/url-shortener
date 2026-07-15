@@ -3,6 +3,9 @@
 dev:
 	air
 
+dev-app:
+	cd frontend && npm run dev
+
 run:
 	go run .
 
@@ -28,16 +31,16 @@ swagger:
 	swag init
 
 docker:
-	docker compose up --build
+	docker compose -f docker-compose.dev.yml up --build
 
 docker-bg:
-	docker compose up -d --build
+	docker compose -f docker-compose.dev.yml up -d --build
 
 down:
-	docker compose down
+	docker compose -f docker-compose.dev.yml down
 
 db-reset:
-	docker compose down -v
+	docker compose -f docker-compose.dev.yml down -v
 
 clean:
 	rm -f url-shortener

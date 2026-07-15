@@ -1,0 +1,102 @@
+services:
+  app:
+    container_name: url-shortener-dev-api
+
+    build:
+      context: .
+
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      APP_ENV: development
+
+      DB_HOST: postgres
+      REDIS_HOST: redis
+
+    ports:
+      - "8080:8080"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    networks:
+      - backend
+
+  frontend:
+    container_name: url-shortener-dev-frontend
+
+    build:
+      context: ./frontend
+      target: development
+
+    command: npm run dev -- --host
+
+    env_file:
+      - ./frontend/.env
+
+    ports:
+      - "5173:5173"
+
+    depends_on:
+      - app
+
+    networks:
+      - backend
+
+  postgres:
+    container_name: url-shortener-dev-postgres
+
+    image: postgres:17-alpine
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - backend
+
+  redis:
+    container_name: url-shortener-dev-redis
+
+    image: redis:7-alpine
+
+    restart: unless-stopped
+
+    ports:
+      - "6379:6379"
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:

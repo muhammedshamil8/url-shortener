@@ -1,0 +1,117 @@
+services:
+  nginx:
+    container_name: url-shortener-prod-nginx
+
+    image: nginx:alpine
+
+    restart: unless-stopped
+
+    depends_on:
+      - app
+      - frontend
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - ./deploy/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+
+    networks:
+      - backend
+
+  app:
+    container_name: url-shortener-prod-api
+
+    image: ${DOCKERHUB_USERNAME:-muhammedshamil8}/url-shortener-api:${TAG:-latest}
+
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      APP_ENV: production
+
+      DB_HOST: postgres
+      REDIS_HOST: redis
+
+    expose:
+      - "8080"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    networks:
+      - backend
+
+  frontend:
+    container_name: url-shortener-prod-frontend
+
+    image: ${DOCKERHUB_USERNAME:-muhammedshamil8}/url-shortener-frontend:${TAG:-latest}
+
+    restart: unless-stopped
+
+    expose:
+      - "80"
+
+    networks:
+      - backend
+
+  postgres:
+    container_name: url-shortener-prod-postgres
+
+    image: postgres:17-alpine
+
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+
+    expose:
+      - "5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - backend
+
+  redis:
+    container_name: url-shortener-prod-redis
+
+    image: redis:7-alpine
+
+    restart: unless-stopped
+
+    expose:
+      - "6379"
+
+    healthcheck:
+      test: ["CMD","redis-cli","ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:
