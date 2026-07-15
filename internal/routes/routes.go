@@ -41,6 +41,7 @@ func Setup(r *gin.Engine, h *handlers.Handler, cfg *config.Config) {
 	{
 		authRoutes.GET("/me", h.GetProfileHandler)
 		authRoutes.GET("/my/urls", h.ListUserURLs)
+		authRoutes.PUT("/my/urls/:id", h.UpdateURL)
 		authRoutes.DELETE("/my/urls/:id", h.DeleteURL)
 	}
 

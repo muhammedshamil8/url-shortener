@@ -12,6 +12,7 @@ type URLRepository interface {
 	GetURLByCode(code string) (string, error)
 	GetCodeByID(id int) (string, error)
 	DeleteURL(id int) error
+	UpdateURL(id int, newURL string) error
 	GetAllURLs(opts models.ListOptions) ([]models.URL, error)
 
 	Health() error
@@ -22,6 +23,7 @@ type UserRepository interface {
 	GetUserByEmail(email string) (*models.User, error)
 	GetAllURLsByUserEmail(email string) ([]models.URL, error)
 	DeleteUserURL(id int) error
+	UpdateUserURL(id int, email string, newURL string) error
 	GetAllUsers() ([]models.User, error)
 	DeleteUser(id int) error
 }

@@ -211,3 +211,68 @@ func TestDeleteUser(t *testing.T) {
 		t.Fatalf("expected user to be deleted, but it exists")
 	}
 }
+
+func TestUpdateUserURL(t *testing.T) {
+	repo := setupTestUserDB(t)
+
+	username := "testuser"
+	email := "test@example.com"
+	passwordHash := "hashed_password"
+
+	userID, err := repo.CreateUser(username, email, passwordHash)
+	if err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	var urlID int
+	err = repo.db.QueryRow(
+		`INSERT INTO urls (short_code, original_url, user_id) 
+		VALUES ($1, $2, $3) RETURNING id`,
+		"abc", "https://google.com", userID,
+	).Scan(&urlID)
+	if err != nil {
+		t.Fatalf("failed to insert test url: %v", err)
+	}
+
+	err = repo.UpdateUserURL(urlID, email, "https://github.com")
+	if err != nil {
+		t.Fatalf("failed to update user url: %v", err)
+	}
+
+	var originalURL string
+	err = repo.db.QueryRow("SELECT original_url FROM urls WHERE id = $1", urlID).Scan(&originalURL)
+	if err != nil {
+		t.Fatalf("failed to query url: %v", err)
+	}
+	if originalURL != "https://github.com" {
+		t.Fatalf("expected original_url to be https://github.com, got %s", originalURL)
+	}
+}
+
+func TestUpdateURL(t *testing.T) {
+	repo := setupTestUserDB(t)
+
+	var urlID int
+	err := repo.db.QueryRow(
+		`INSERT INTO urls (short_code, original_url) 
+		VALUES ($1, $2) RETURNING id`,
+		"xyz", "https://google.com",
+	).Scan(&urlID)
+	if err != nil {
+		t.Fatalf("failed to insert test url: %v", err)
+	}
+
+	err = repo.UpdateURL(urlID, "https://reddit.com")
+	if err != nil {
+		t.Fatalf("failed to update url: %v", err)
+	}
+
+	var originalURL string
+	err = repo.db.QueryRow("SELECT original_url FROM urls WHERE id = $1", urlID).Scan(&originalURL)
+	if err != nil {
+		t.Fatalf("failed to query url: %v", err)
+	}
+	if originalURL != "https://reddit.com" {
+		t.Fatalf("expected original_url to be https://reddit.com, got %s", originalURL)
+	}
+}

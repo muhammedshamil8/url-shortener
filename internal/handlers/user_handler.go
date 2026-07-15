@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/muhammedshamil8/url-shortener/internal/response"
+	"github.com/muhammedshamil8/url-shortener/internal/utils"
 )
 
 // GetProfile godoc
@@ -92,5 +93,63 @@ func (h *Handler) DeleteURL(c *gin.Context) {
 
 	response.OK(c, gin.H{
 		"message": "URL deleted successfully",
+	})
+}
+
+// UpdateURL godoc
+//
+//	@Summary	Update URL
+//	@Description	Update URL target original URL
+//	@Tags	Users
+//	@Accept	json
+//	@Produce	json
+//	@Param	id	path	int	true	"URL ID"
+//	@Param	request	body	models.ShortenRequest	true	"Request body"
+//	@Success	200	{object}	models.SuccessResponse
+//	@Failure	400	{object}	models.ErrorResponse
+//	@Failure	404	{object}	models.ErrorResponse
+//	@Failure	500	{object}	models.ErrorResponse
+//	@Router	/me/urls/{id} [put]
+func (h *Handler) UpdateURL(c *gin.Context) {
+	idstr := c.Param("id")
+	id, err := strconv.Atoi(idstr)
+	if err != nil {
+		response.BadRequest(c, "Invalid id")
+		return
+	}
+
+	var req struct {
+		URL string `json:"url" binding:"required"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request body")
+		return
+	}
+
+	if err := utils.ValidateURL(req.URL); err != nil {
+		response.BadRequest(c, "Invalid URL")
+		return
+	}
+
+	// Get short code before updating to invalidate cache
+	code, _ := h.repo.GetCodeByID(id)
+
+	err = h.repo.UpdateUserURL(id, c.GetString("email"), req.URL)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			response.NotFound(c, "URL not found or unauthorized")
+			return
+		}
+		response.InternalServerError(c, "Failed to update url")
+		return
+	}
+
+	// Invalidate cache
+	if code != "" && h.cache != nil {
+		_ = h.cache.Delete(c, code)
+	}
+
+	response.OK(c, gin.H{
+		"message": "URL updated successfully",
 	})
 }

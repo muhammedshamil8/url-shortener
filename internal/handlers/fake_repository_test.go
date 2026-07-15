@@ -10,6 +10,7 @@ type FakeRepository struct {
 	GetURLByCodeFunc   func(string) (string, error)
 	GetCodeByIDFunc    func(int) (string, error)
 	DeleteURLFunc      func(int) error
+	UpdateURLFunc      func(int, string) error
 	GetAllURLsFunc     func(models.ListOptions) ([]models.URL, error)
 	HealthFunc         func() error
 	CreateShortURLFunc func(string, string, *int) (int64, error)
@@ -17,6 +18,7 @@ type FakeRepository struct {
 	CreateUserFunc            func(string, string, string) (int64, error)
 	GetUserByEmailFunc        func(string) (*models.User, error)
 	DeleteUserURLFunc         func(int) error
+	UpdateUserURLFunc         func(int, string, string) error
 	GetAllURLsByUserEmailFunc func(string) ([]models.URL, error)
 	GetAllUsersFunc           func() ([]models.User, error)
 	DeleteUserFunc            func(int) error
@@ -73,6 +75,13 @@ func (m *FakeRepository) DeleteURL(id int) error {
 	return nil
 }
 
+func (m *FakeRepository) UpdateURL(id int, newURL string) error {
+	if m.UpdateURLFunc != nil {
+		return m.UpdateURLFunc(id, newURL)
+	}
+	return nil
+}
+
 func (m *FakeRepository) GetAllURLs(opts models.ListOptions) ([]models.URL, error) {
 	if m.GetAllURLsFunc != nil {
 		return m.GetAllURLsFunc(opts)
@@ -83,6 +92,13 @@ func (m *FakeRepository) GetAllURLs(opts models.ListOptions) ([]models.URL, erro
 func (m *FakeRepository) DeleteUserURL(id int) error {
 	if m.DeleteUserURLFunc != nil {
 		return m.DeleteUserURLFunc(id)
+	}
+	return nil
+}
+
+func (m *FakeRepository) UpdateUserURL(id int, email string, newURL string) error {
+	if m.UpdateUserURLFunc != nil {
+		return m.UpdateUserURLFunc(id, email, newURL)
 	}
 	return nil
 }

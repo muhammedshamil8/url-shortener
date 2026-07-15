@@ -58,6 +58,30 @@ func (r *Repository) DeleteUserURL(id int) error {
 	return nil
 }
 
+func (r *Repository) UpdateUserURL(id int, email string, newURL string) error {
+	result, err := r.db.Exec(
+		`UPDATE urls u
+		 SET original_url = $1
+		 FROM users usr
+		 WHERE u.user_id = usr.id AND u.id = $2 AND usr.email = $3`,
+		newURL, id, email,
+	)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
+
 func (r *Repository) GetAllURLsByUserEmail(email string) ([]models.URL, error) {
 	rows, err := r.db.Query(
 		`SELECT u.id, u.short_code, u.original_url, u.click_count, u.created_at, u.user_id 

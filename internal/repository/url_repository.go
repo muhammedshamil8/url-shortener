@@ -72,6 +72,22 @@ func (r *Repository) DeleteURL(id int) error {
 	return nil
 }
 
+func (r *Repository) UpdateURL(id int, newURL string) error {
+	result, err := r.db.Exec("UPDATE urls SET original_url = $1 WHERE id = $2", newURL, id)
+	if err != nil {
+		logger.Log.Error("Error updating URL in database", "error", err)
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 func (r *Repository) GetAllURLs(opts models.ListOptions) ([]models.URL, error) {
 	var urls []models.URL
 
