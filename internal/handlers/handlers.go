@@ -87,6 +87,9 @@ func (h *Handler) ShortenHandler(c *gin.Context) {
 			response.InternalServerError(c, "Failed to create short url")
 			return
 		}
+		if h.cache != nil {
+			h.cache.Set(c, shortCode, req.URL, time.Hour)
+		}
 		response.Created(c, gin.H{
 			"id":           id,
 			"original_url": req.URL,
