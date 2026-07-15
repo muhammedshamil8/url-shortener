@@ -16,3 +16,6 @@ coverage.out
 
 # Environment
 .env
+
+# SSL Certificates
+deploy/nginx/certs/
