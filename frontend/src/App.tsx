@@ -2,6 +2,7 @@ import React, { useState, useEffect, ReactNode } from 'react';
 import { ToastProvider, useToast } from './components/Toast';
 import { Link, LayoutDashboard, Link2, ShieldAlert, LogOut } from 'lucide-react';
 import { API_BASE_URL } from './config';
+import api from './api';
 
 import LandingView, { User } from './views/LandingView';
 import LoginView from './views/LoginView';
@@ -24,6 +25,27 @@ function AppContent() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  useEffect(() => {
+    const handleUserUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<User>;
+      setUser(customEvent.detail);
+    };
+
+    const handleLoggedOut = () => {
+      setUser(null);
+      navigate('#/login');
+      showToast("Session expired. Please log in again.", "error");
+    };
+
+    window.addEventListener('sn-user-updated', handleUserUpdated);
+    window.addEventListener('sn-user-logged-out', handleLoggedOut);
+
+    return () => {
+      window.removeEventListener('sn-user-updated', handleUserUpdated);
+      window.removeEventListener('sn-user-logged-out', handleLoggedOut);
+    };
+  }, []);
+
   const navigate = (toHash: string) => {
     window.location.hash = toHash;
   };
@@ -41,51 +63,45 @@ function AppContent() {
     showToast("Logged out successfully", "success");
   };
 
-  // Simple fetch wrapper with auth header and auto refresh
+  // Axios-based wrapper to compatibility-support old views
   const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string> || {}),
-    };
+    const method = (options.method || 'GET').toUpperCase();
+    const headers = (options.headers as Record<string, string>) || {};
+    let data: any = undefined;
 
-    if (user && user.accessToken) {
-      headers['Authorization'] = `Bearer ${user.accessToken}`;
-    }
-
-    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
-    let res = await fetch(url, { ...options, headers });
-
-    if (res.status === 401 && user && user.refreshToken) {
-      // Attempt refresh
+    if (options.body) {
       try {
-        const refreshRes = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refresh_token: user.refreshToken })
-        });
-
-        if (refreshRes.ok) {
-          const refreshData = await refreshRes.json();
-          const updatedUser = {
-            ...user,
-            accessToken: refreshData.data.access_token,
-            refreshToken: refreshData.data.refresh_token,
-          };
-          setUser(updatedUser);
-          localStorage.setItem('sn_user', JSON.stringify(updatedUser));
-          
-          // Retry primary request
-          headers['Authorization'] = `Bearer ${refreshData.data.access_token}`;
-          res = await fetch(url, { ...options, headers });
-        } else {
-          handleLogout();
-        }
+        data = JSON.parse(options.body as string);
       } catch (e) {
-        handleLogout();
+        data = options.body;
       }
     }
 
-    return res;
+    try {
+      const response = await api({
+        url: endpoint,
+        method,
+        headers,
+        data,
+      });
+
+      return {
+        ok: true,
+        status: response.status,
+        json: async () => response.data,
+        text: async () => JSON.stringify(response.data),
+      } as Response;
+    } catch (error: any) {
+      if (error.response) {
+        return {
+          ok: false,
+          status: error.response.status,
+          json: async () => error.response.data,
+          text: async () => JSON.stringify(error.response.data),
+        } as Response;
+      }
+      throw error;
+    }
   };
 
   // Router mapping

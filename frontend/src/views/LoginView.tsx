@@ -2,7 +2,7 @@ import React, { useState, FormEvent } from 'react';
 import { Link } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { User } from './LandingView';
-import { API_BASE_URL } from '../config';
+import api from '../api';
 
 interface LoginViewProps {
   onLoginSuccess: (userData: User) => void;
@@ -20,27 +20,19 @@ export default function LoginView({ onLoginSuccess, navigate }: LoginViewProps) 
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+      const res = await api.post('/api/v1/auth/login', { email, password });
+      const data = res.data;
+      onLoginSuccess({
+        accessToken: data.data.access_token,
+        refreshToken: data.data.refresh_token,
+        username: data.data.user.username,
+        email: data.data.user.email,
+        role: data.data.user.role,
       });
-
-      const data = await res.json();
-      if (res.ok) {
-        onLoginSuccess({
-          accessToken: data.data.access_token,
-          refreshToken: data.data.refresh_token,
-          username: data.data.user.username,
-          email: data.data.user.email,
-          role: data.data.user.role,
-        });
-        showToast(`Welcome back, ${data.data.user.username}!`, "success");
-      } else {
-        showToast(data.error || "Failed to authenticate", "error");
-      }
-    } catch (e) {
-      showToast("Something went wrong", "error");
+      showToast(`Welcome back, ${data.data.user.username}!`, "success");
+    } catch (e: any) {
+      const errMsg = e.response?.data?.error || "Failed to authenticate";
+      showToast(errMsg, "error");
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,7 @@
 import React, { useState, FormEvent } from 'react';
 import { Link } from 'lucide-react';
 import { useToast } from '../components/Toast';
-import { API_BASE_URL } from '../config';
+import api from '../api';
 
 interface RegisterViewProps {
   navigate: (toHash: string) => void;
@@ -19,21 +19,12 @@ export default function RegisterView({ navigate }: RegisterViewProps) {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password })
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        showToast("Account created successfully! Please log in.", "success");
-        navigate('#/login');
-      } else {
-        showToast(data.error || "Failed to create account", "error");
-      }
-    } catch (e) {
-      showToast("Something went wrong", "error");
+      await api.post('/api/v1/auth/register', { username, email, password });
+      showToast("Account created successfully! Please log in.", "success");
+      navigate('#/login');
+    } catch (e: any) {
+      const errMsg = e.response?.data?.error || "Failed to create account";
+      showToast(errMsg, "error");
     } finally {
       setLoading(false);
     }
