@@ -1,10 +1,8 @@
 import axios from 'axios';
 import { API_BASE_URL } from './config';
 
-// Strip trailing /api/v1 if it is present, since all relative endpoints already start with /api/v1
-const normalizedBase = API_BASE_URL.endsWith('/api/v1') 
-  ? API_BASE_URL.slice(0, -7) 
-  : API_BASE_URL;
+// Normalize base URL: strip trailing slash and optional /api/v1 suffix to prevent double/duplicated slashes
+const normalizedBase = API_BASE_URL.replace(/\/$/, '').replace(/\/api\/v1$/, '');
 
 const api = axios.create({
   baseURL: normalizedBase,
