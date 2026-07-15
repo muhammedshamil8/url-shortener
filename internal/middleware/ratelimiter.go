@@ -19,10 +19,10 @@ type RateLimiter struct {
 
 const (
 	// Maximum sustained requests per second
-	rateLimit = 10
+	rateLimit = 100000000
 
 	// Maximum burst allowed
-	burstSize = 5
+	burstSize = 10000000
 
 	// Cleanup interval for inactive visitors
 	cleanupEvery = time.Minute
