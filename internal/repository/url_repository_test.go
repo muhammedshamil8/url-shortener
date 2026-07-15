@@ -52,7 +52,7 @@ func testURL() models.URL {
 func TestCreateShortURL(t *testing.T) {
 	repo := setupTestDB(t)
 	URL := testURL()
-	id, err := repo.CreateShortURL(URL.ShortCode, URL.OriginalURL)
+	id, err := repo.CreateShortURL(URL.ShortCode, URL.OriginalURL, nil)
 	if err != nil {
 		t.Fatalf("failed to create short URL: %v", err)
 	}
@@ -81,7 +81,7 @@ func TestCreateShortURL(t *testing.T) {
 func TestGetURLByCode(t *testing.T) {
 	repo := setupTestDB(t)
 	url := testURL()
-	if id, err := repo.CreateShortURL(url.ShortCode, url.OriginalURL); err != nil {
+	if id, err := repo.CreateShortURL(url.ShortCode, url.OriginalURL, nil); err != nil {
 		t.Fatalf("failed to create short URL: %v", err)
 	} else {
 		t.Log("Created short URL with ID:", id)
@@ -98,7 +98,7 @@ func TestGetURLByCode(t *testing.T) {
 func TestDeleteURL(t *testing.T) {
 	repo := setupTestDB(t)
 	url := testURL()
-	if id, err := repo.CreateShortURL(url.ShortCode, url.OriginalURL); err != nil {
+	if id, err := repo.CreateShortURL(url.ShortCode, url.OriginalURL, nil); err != nil {
 		t.Fatalf("failed to create short URL: %v", err)
 	} else {
 		t.Log("Created short URL with ID:", id)
@@ -150,7 +150,7 @@ func TestGetAllURLs(t *testing.T) {
 		created := make([]models.URL, 0, len(data))
 		baseTime := time.Now().Add(-10 * time.Minute)
 		for idx, item := range data {
-			id, err := repo.CreateShortURL(item.code, item.url)
+			id, err := repo.CreateShortURL(item.code, item.url, nil)
 			if err != nil {
 				t.Fatalf("failed to seed url: %v", err)
 			}

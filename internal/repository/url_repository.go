@@ -21,12 +21,12 @@ func New(db *sql.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) CreateShortURL(shortCode, url string) (int64, error) {
+func (r *Repository) CreateShortURL(shortCode, url string, userID *int) (int64, error) {
 	var id int64
 	err := r.db.QueryRow(
-		`INSERT INTO urls (short_code, original_url) 
-		VALUES ($1, $2) RETURNING id`,
-		shortCode, url,
+		`INSERT INTO urls (short_code, original_url, user_id) 
+		VALUES ($1, $2, $3) RETURNING id`,
+		shortCode, url, userID,
 	).Scan(&id)
 
 	if err != nil {

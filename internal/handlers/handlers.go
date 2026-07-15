@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/muhammedshamil8/url-shortener/internal/auth"
 	"github.com/muhammedshamil8/url-shortener/internal/config"
 	"github.com/muhammedshamil8/url-shortener/internal/models"
 	"github.com/muhammedshamil8/url-shortener/internal/response"
@@ -53,13 +54,27 @@ func (h *Handler) ShortenHandler(c *gin.Context) {
 		return
 	}
 
+	var userIDPtr *int
+	authHeader := c.GetHeader("Authorization")
+	if authHeader != "" {
+		const bearerPrefix = "Bearer "
+		if len(authHeader) > len(bearerPrefix) && authHeader[:len(bearerPrefix)] == bearerPrefix {
+			tokenString := authHeader[len(bearerPrefix):]
+			claims, err := auth.ValidateToken(tokenString, h.cfg.JWT.AccessTokenSecret)
+			if err == nil {
+				uID := claims.UserID
+				userIDPtr = &uID
+			}
+		}
+	}
+
 	for i := 0; i < MaxRetries; i++ {
 		shortCode, err := utils.GenerateShortCode()
 		if err != nil {
 			response.InternalServerError(c, "Failed to generate short code")
 			return
 		}
-		id, err := h.repo.CreateShortURL(shortCode, req.URL)
+		id, err := h.repo.CreateShortURL(shortCode, req.URL, userIDPtr)
 		if err != nil {
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) && pgErr.Code == UniqueViolation {

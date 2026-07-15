@@ -11,7 +11,7 @@ type FakeRepository struct {
 	DeleteURLFunc      func(int) error
 	GetAllURLsFunc     func(models.ListOptions) ([]models.URL, error)
 	HealthFunc         func() error
-	CreateShortURLFunc func(string, string) (int64, error)
+	CreateShortURLFunc func(string, string, *int) (int64, error)
 
 	CreateUserFunc            func(string, string, string) (int64, error)
 	GetUserByEmailFunc        func(string) (*models.User, error)
@@ -44,9 +44,9 @@ func (m *FakeRepository) Health() error {
 	return nil
 }
 
-func (m *FakeRepository) CreateShortURL(shortCode, url string) (int64, error) {
+func (m *FakeRepository) CreateShortURL(shortCode, url string, userID *int) (int64, error) {
 	if m.CreateShortURLFunc != nil {
-		return m.CreateShortURLFunc(shortCode, url)
+		return m.CreateShortURLFunc(shortCode, url, userID)
 	}
 	return 1, nil
 }
