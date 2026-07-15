@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🔗 Snippy | Modern URL Shortener</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="h-full bg-[#070a13] text-gray-100 relative">
+    <!-- Ambient Glows -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+      <div class="absolute w-[600px] h-[600px] rounded-full filter blur-[80px] bg-gradient-to-r from-indigo-500/15 to-violet-500/5 top-[-200px] left-[-200px]"></div>
+      <div class="absolute w-[600px] h-[600px] rounded-full filter blur-[80px] bg-gradient-to-r from-indigo-500/15 to-violet-500/5 bottom-[-200px] right-[-200px]"></div>
+    </div>
+
+    <div id="root" class="min-h-full flex flex-col relative z-10"></div>
+    
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
