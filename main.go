@@ -18,7 +18,9 @@ import (
 	"github.com/muhammedshamil8/url-shortener/internal/config"
 	"github.com/muhammedshamil8/url-shortener/internal/database"
 	"github.com/muhammedshamil8/url-shortener/internal/handlers"
+	"github.com/muhammedshamil8/url-shortener/internal/cache"
 	"github.com/muhammedshamil8/url-shortener/internal/logger"
+	"github.com/muhammedshamil8/url-shortener/internal/redis"
 	"github.com/muhammedshamil8/url-shortener/internal/repository"
 	"github.com/muhammedshamil8/url-shortener/internal/routes"
 	"github.com/muhammedshamil8/url-shortener/internal/server"
@@ -40,6 +42,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	redisClient, err := redis.NewRedis(cfg.Redis)
+	if err != nil {
+		logger.Log.Error("Failed to initialize redis", "error", err)
+		os.Exit(1)
+	}
+	defer redisClient.Close()
+
 	logger.Log.Info("Server starting", "environment", cfg.Env)
 
 	db, err := database.InitDB(cfg.DB)
@@ -50,8 +59,9 @@ func main() {
 	defer db.Close()
 
 	repo := repository.New(db)
+	redisCache := cache.NewRedisCache(redisClient)
 
-	h := handlers.New(repo, *cfg)
+	h := handlers.New(repo, redisCache, *cfg)
 
 	if err := database.MigrateUserTable(db); err != nil {
 		logger.Log.Error("Failed to migrate database", "error", err)

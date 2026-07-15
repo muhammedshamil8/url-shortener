@@ -11,13 +11,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/muhammedshamil8/url-shortener/internal/auth"
+	"github.com/muhammedshamil8/url-shortener/internal/cache"
 	"github.com/muhammedshamil8/url-shortener/internal/config"
 	"github.com/muhammedshamil8/url-shortener/internal/models"
 )
 
-func setupTestRouter(repo Repository) *gin.Engine {
+func setupTestRouter(repo Repository, cache cache.Cache) *gin.Engine {
 	r := gin.New()
-	h := New(repo, config.Config{})
+	h := New(repo, cache, config.Config{})
 
 	r.GET("/api/v1/live", h.LiveHandler)
 	r.GET("/api/v1/ready", h.ReadyHandler)
@@ -61,7 +62,7 @@ func TestLiveHandler(t *testing.T) {
 	}
 
 	repo := &FakeRepository{}
-	r := setupTestRouter(repo)
+	r := setupTestRouter(repo, nil)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -119,7 +120,7 @@ func TestShortenHandler(t *testing.T) {
 		},
 	}
 	repo := &FakeRepository{}
-	r := setupTestRouter(repo)
+	r := setupTestRouter(repo, nil)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -194,7 +195,8 @@ func TestRedirectHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := setupTestRouter(tt.repo)
+
+			r := setupTestRouter(tt.repo, nil)
 
 			recorder := httptest.NewRecorder()
 
@@ -270,7 +272,7 @@ func TestDeleteHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			r := setupTestRouter(tt.repo)
+			r := setupTestRouter(tt.repo, nil)
 
 			req, err := http.NewRequest(http.MethodDelete, tt.path, nil)
 			if err != nil {
@@ -337,7 +339,7 @@ func TestListAllHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			r := setupTestRouter(tt.repo)
+			r := setupTestRouter(tt.repo, nil)
 
 			req, err := http.NewRequest(http.MethodGet, tt.path, nil)
 			if err != nil {
@@ -396,7 +398,7 @@ func TestReadyHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			r := setupTestRouter(tt.repo)
+			r := setupTestRouter(tt.repo, nil)
 
 			req, err := http.NewRequest(http.MethodGet, tt.path, nil)
 			if err != nil {
@@ -443,7 +445,7 @@ func TestRegisterHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			r := setupTestRouter(tt.repo)
+			r := setupTestRouter(tt.repo, nil)
 
 			req, err := http.NewRequest(http.MethodPost, tt.path, strings.NewReader(tt.body))
 			if err != nil {
@@ -496,7 +498,7 @@ func TestLoginHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			r := setupTestRouter(tt.repo)
+			r := setupTestRouter(tt.repo, nil)
 
 			req, err := http.NewRequest(http.MethodPost, tt.path, strings.NewReader(tt.body))
 			if err != nil {
@@ -543,7 +545,7 @@ func TestDeleteUserURLHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			r := setupTestRouter(tt.repo)
+			r := setupTestRouter(tt.repo, nil)
 
 			req, err := http.NewRequest(http.MethodDelete, tt.path, strings.NewReader(tt.body))
 			if err != nil {
@@ -598,7 +600,7 @@ func TestGetUserURLsHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			r := setupTestRouter(tt.repo)
+			r := setupTestRouter(tt.repo, nil)
 
 			req, err := http.NewRequest(http.MethodGet, tt.path, strings.NewReader(tt.body))
 			if err != nil {
@@ -647,7 +649,7 @@ func TestGetProfileHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			r := setupTestRouter(tt.repo)
+			r := setupTestRouter(tt.repo, nil)
 
 			req, err := http.NewRequest(http.MethodGet, tt.path, nil)
 			if err != nil {
@@ -715,7 +717,7 @@ func TestRefreshHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
 			r := gin.New()
-			h := New(&FakeRepository{}, tt.config)
+			h := New(&FakeRepository{}, nil, tt.config)
 			r.POST("/api/v1/auth/refresh", h.RefreshHandler)
 
 			req, err := http.NewRequest(http.MethodPost, tt.path, strings.NewReader(tt.body))
@@ -779,7 +781,7 @@ func TestAdminListUsers(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			r := setupTestRouter(tt.repo)
+			r := setupTestRouter(tt.repo, nil)
 
 			req, err := http.NewRequest(http.MethodGet, tt.path, nil)
 			if err != nil {
@@ -853,7 +855,7 @@ func TestAdminDeleteUser(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			r := setupTestRouter(tt.repo)
+			r := setupTestRouter(tt.repo, nil)
 
 			req, err := http.NewRequest(http.MethodDelete, tt.path, nil)
 			if err != nil {

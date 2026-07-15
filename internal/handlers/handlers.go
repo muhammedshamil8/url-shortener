@@ -7,10 +7,12 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/muhammedshamil8/url-shortener/internal/auth"
+	"github.com/muhammedshamil8/url-shortener/internal/cache"
 	"github.com/muhammedshamil8/url-shortener/internal/config"
 	"github.com/muhammedshamil8/url-shortener/internal/models"
 	"github.com/muhammedshamil8/url-shortener/internal/response"
@@ -24,11 +26,12 @@ const (
 
 type Handler struct {
 	repo Repository
+	cache cache.Cache
 	cfg  config.Config
 }
 
-func New(repo Repository, cfg config.Config) *Handler {
-	return &Handler{repo: repo, cfg: cfg}
+func New(repo Repository, cache cache.Cache, cfg config.Config) *Handler {
+	return &Handler{repo: repo, cache: cache, cfg: cfg}
 }
 
 // Shorten godoc
@@ -110,19 +113,30 @@ func (h *Handler) ShortenHandler(c *gin.Context) {
 //		@Router	/{code} [get]
 func (h *Handler) RedirectHandler(c *gin.Context) {
 	code := c.Param("code")
-	url, err := h.repo.GetURLByCode(code)
+	// use cache to get url
+	var url string
+	var err error
+	if h.cache != nil {
+		url, err = h.cache.Get(c, code)
+	} else {
+		err = errors.New("cache not configured")
+	}
+
+	// if cache miss get from database and set in cache
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			response.NotFound(c, "URL not found")
+		url, err = h.repo.GetURLByCode(code)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				response.NotFound(c, "URL not found")
+				return
+			}
+			response.InternalServerError(c, "Database error")
 			return
 		}
-
-		response.InternalServerError(c, "Database error")
-		return
+		if h.cache != nil {
+			h.cache.Set(c, code, url, time.Hour)
+		}
 	}
-	// if err := repository.IncrementClickCount(code); err != nil {
-	// 	log.Println("Error incrementing click count:", err)
-	// }
 	c.Redirect(http.StatusSeeOther, url)
 }
 
