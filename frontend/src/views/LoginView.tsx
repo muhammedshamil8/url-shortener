@@ -2,6 +2,7 @@ import React, { useState, FormEvent } from 'react';
 import { Link } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import { User } from './LandingView';
+import { API_BASE_URL } from '../config';
 
 interface LoginViewProps {
   onLoginSuccess: (userData: User) => void;
@@ -19,7 +20,7 @@ export default function LoginView({ onLoginSuccess, navigate }: LoginViewProps) 
     setLoading(true);
 
     try {
-      const res = await fetch('/api/v1/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })

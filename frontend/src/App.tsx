@@ -1,6 +1,7 @@
 import React, { useState, useEffect, ReactNode } from 'react';
 import { ToastProvider, useToast } from './components/Toast';
 import { Link, LayoutDashboard, Link2, ShieldAlert, LogOut } from 'lucide-react';
+import { API_BASE_URL } from './config';
 
 import LandingView, { User } from './views/LandingView';
 import LoginView from './views/LoginView';
@@ -51,12 +52,13 @@ function AppContent() {
       headers['Authorization'] = `Bearer ${user.accessToken}`;
     }
 
-    let res = await fetch(endpoint, { ...options, headers });
+    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+    let res = await fetch(url, { ...options, headers });
 
     if (res.status === 401 && user && user.refreshToken) {
       // Attempt refresh
       try {
-        const refreshRes = await fetch('/api/v1/auth/refresh', {
+        const refreshRes = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refresh_token: user.refreshToken })
@@ -74,7 +76,7 @@ function AppContent() {
           
           // Retry primary request
           headers['Authorization'] = `Bearer ${refreshData.data.access_token}`;
-          res = await fetch(endpoint, { ...options, headers });
+          res = await fetch(url, { ...options, headers });
         } else {
           handleLogout();
         }
@@ -134,7 +136,7 @@ interface DashboardLayoutProps {
 // Sidebar Layout Wrapper
 function DashboardLayout({ user, activeTab, onLogout, navigate, children }: DashboardLayoutProps) {
   return (
-    <div className="flex-1 flex flex-col md:flex-row">
+    <div className="flex-1 flex flex-col md:flex-row ">
       {/* Sidebar */}
       <aside className="w-full md:w-64 glass border-r border-white/5 flex flex-col p-6">
         {/* Logo */}

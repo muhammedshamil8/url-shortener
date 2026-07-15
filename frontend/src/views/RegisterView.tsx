@@ -1,6 +1,7 @@
 import React, { useState, FormEvent } from 'react';
 import { Link } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import { API_BASE_URL } from '../config';
 
 interface RegisterViewProps {
   navigate: (toHash: string) => void;
@@ -18,7 +19,7 @@ export default function RegisterView({ navigate }: RegisterViewProps) {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/v1/auth/register', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password })
