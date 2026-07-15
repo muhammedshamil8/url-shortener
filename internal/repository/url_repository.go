@@ -54,6 +54,15 @@ func (r *Repository) GetURLByCode(code string) (string, error) {
 	return url, nil
 }
 
+func (r *Repository) GetCodeByID(id int) (string, error) {
+	var code string
+	err := r.db.QueryRow("SELECT short_code FROM urls WHERE id = $1", id).Scan(&code)
+	if err != nil {
+		return "", err
+	}
+	return code, nil
+}
+
 func (r *Repository) DeleteURL(id int) error {
 	_, err := r.db.Exec("DELETE FROM urls WHERE id = $1", id)
 	if err != nil {

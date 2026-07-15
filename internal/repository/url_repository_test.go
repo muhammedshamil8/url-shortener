@@ -124,6 +124,29 @@ func TestDeleteURL(t *testing.T) {
 	}
 }
 
+func TestGetCodeByID(t *testing.T) {
+	repo := setupTestDB(t)
+	url := testURL()
+	id, err := repo.CreateShortURL(url.ShortCode, url.OriginalURL, nil)
+	if err != nil {
+		t.Fatalf("failed to create short URL: %v", err)
+	}
+
+	code, err := repo.GetCodeByID(int(id))
+	if err != nil {
+		t.Fatalf("failed to get code by ID: %v", err)
+	}
+	if code != url.ShortCode {
+		t.Fatalf("expected code %s, got %s", url.ShortCode, code)
+	}
+
+	// Non-existent ID
+	code, err = repo.GetCodeByID(999999)
+	if err == nil {
+		t.Fatal("expected error for non-existent ID, got nil")
+	}
+}
+
 func TestGetAllURLs(t *testing.T) {
 	repo := setupTestDB(t)
 

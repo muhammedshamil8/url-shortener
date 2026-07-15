@@ -8,6 +8,7 @@ import (
 
 type FakeRepository struct {
 	GetURLByCodeFunc   func(string) (string, error)
+	GetCodeByIDFunc    func(int) (string, error)
 	DeleteURLFunc      func(int) error
 	GetAllURLsFunc     func(models.ListOptions) ([]models.URL, error)
 	HealthFunc         func() error
@@ -56,6 +57,13 @@ func (m *FakeRepository) GetURLByCode(code string) (string, error) {
 		return m.GetURLByCodeFunc(code)
 	}
 	return "https://google.com", nil
+}
+
+func (m *FakeRepository) GetCodeByID(id int) (string, error) {
+	if m.GetCodeByIDFunc != nil {
+		return m.GetCodeByIDFunc(id)
+	}
+	return "", nil
 }
 
 func (m *FakeRepository) DeleteURL(id int) error {

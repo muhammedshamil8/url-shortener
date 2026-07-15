@@ -72,6 +72,9 @@ func (h *Handler) DeleteURL(c *gin.Context) {
 		response.BadRequest(c, "Invalid id")
 		return
 	}
+	// Get short code before deleting from database
+	code, _ := h.repo.GetCodeByID(id)
+
 	err = h.repo.DeleteUserURL(id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -81,6 +84,12 @@ func (h *Handler) DeleteURL(c *gin.Context) {
 		response.InternalServerError(c, "Failed to delete url")
 		return
 	}
+
+	// Invalidate cache
+	if code != "" && h.cache != nil {
+		_ = h.cache.Delete(c, code)
+	}
+
 	response.OK(c, gin.H{
 		"message": "URL deleted successfully",
 	})
