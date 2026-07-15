@@ -1,0 +1,12 @@
+.git
+.github
+.air.toml
+tmp/
+coverage.out
+
+.env
+
+README.md
+PSQL.md
+
+*.log

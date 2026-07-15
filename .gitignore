@@ -1,1 +1,18 @@
+# Air
+tmp/
+
+# Coverage reports
+coverage.out
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go test
+*.test
+
+# Environment
 .env
