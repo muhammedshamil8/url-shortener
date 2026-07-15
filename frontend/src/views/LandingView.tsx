@@ -70,10 +70,10 @@ export default function LandingView({ user, apiFetch, navigate }: LandingViewPro
           </div>
           <span className="font-outfit text-xl font-bold tracking-tight">Snippy</span>
         </div>
-        
+
         <div className="flex items-center gap-4">
           {user ? (
-            <button 
+            <button
               onClick={() => navigate('#/dashboard')}
               className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl transition duration-200 text-sm flex items-center gap-2"
             >
@@ -85,7 +85,7 @@ export default function LandingView({ user, apiFetch, navigate }: LandingViewPro
               <button onClick={() => navigate('#/login')} className="px-4 py-2 text-gray-400 hover:text-white font-medium transition text-sm">
                 Sign In
               </button>
-              <button 
+              <button
                 onClick={() => navigate('#/register')}
                 className="px-4 py-2 bg-white/10 hover:bg-white/15 text-white font-medium rounded-xl border border-white/10 transition text-sm"
               >
@@ -99,7 +99,7 @@ export default function LandingView({ user, apiFetch, navigate }: LandingViewPro
       {/* Hero Section */}
       <main className="flex-1 max-w-4xl mx-auto px-6 flex flex-col items-center justify-center text-center py-20 relative z-10">
         <h1 className="font-outfit text-4xl sm:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
-          Shorten links. <br/>
+          Shorten links. <br />
           <span className="bg-gradient-to-r from-brand-500 to-violet-400 bg-clip-text text-transparent">Measure impact.</span>
         </h1>
         <p className="text-gray-400 text-lg max-w-xl mb-12">
@@ -113,8 +113,8 @@ export default function LandingView({ user, apiFetch, navigate }: LandingViewPro
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
                 <Link2 className="w-5 h-5" />
               </span>
-              <input 
-                type="url" 
+              <input
+                type="url"
                 placeholder="Paste your long URL here..."
                 required
                 value={urlInput}
@@ -122,8 +122,8 @@ export default function LandingView({ user, apiFetch, navigate }: LandingViewPro
                 className="w-full pl-12 pr-4 py-3.5 glass-input rounded-xl text-white placeholder-gray-500 text-sm"
               />
             </div>
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={loading}
               className="bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-medium px-8 py-3.5 rounded-xl transition duration-200 text-sm flex items-center justify-center gap-2"
             >
@@ -139,10 +139,10 @@ export default function LandingView({ user, apiFetch, navigate }: LandingViewPro
             <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider block mb-2">Shortened Result</span>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex-1 overflow-hidden pr-4">
-                <a 
-                  href={shortenedResult.short_url} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
+                <a
+                  href={shortenedResult.short_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="font-outfit text-xl font-bold text-brand-500 hover:underline break-all"
                 >
                   {shortenedResult.short_url}
@@ -150,16 +150,16 @@ export default function LandingView({ user, apiFetch, navigate }: LandingViewPro
                 <span className="text-xs text-gray-500 block truncate mt-1">{shortenedResult.original_url}</span>
               </div>
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={() => copyToClipboard(shortenedResult.short_url)}
                   className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl transition border border-white/5"
                   title="Copy Link"
                 >
                   <Copy className="w-4 h-4 text-gray-300" />
                 </button>
-                <a 
-                  href={shortenedResult.short_url} 
-                  target="_blank" 
+                <a
+                  href={shortenedResult.short_url}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="p-2.5 bg-brand-600 hover:bg-brand-700 rounded-xl transition text-white"
                   title="Open Link"
@@ -177,7 +177,7 @@ export default function LandingView({ user, apiFetch, navigate }: LandingViewPro
         <span>&copy; 2026 Snippy. Built with Go & React.</span>
         <div className="flex gap-4 mt-2 sm:mt-0">
           <a href="#/login" className="hover:text-gray-300">Admin Dashboard</a>
-          <a href="/swagger/index.html" target="_blank" className="hover:text-gray-300">API Documentation</a>
+          <a href="http://localhost:8080/swagger/index.html" target="_blank" className="hover:text-gray-300">API Documentation</a>
         </div>
       </footer>
     </div>

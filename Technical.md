@@ -147,8 +147,8 @@ The goal is to learn how production Go backend services are designed, tested, do
 # Phase 3 — Production Features 🚧 
 
 ## Performance
-- [ ] Redis
-- [ ] Response Caching
+- [x] Redis
+- [x] Response Caching
 
 ## Authentication ✅
 - [x] User Registration
@@ -159,18 +159,32 @@ The goal is to learn how production Go backend services are designed, tested, do
 
 ## Observability
 - [ ] Prometheus Metrics
+- [ ] Grafana Dashboards
 - [ ] OpenTelemetry Tracing
 
 ## CI/CD
-- [ ] Linting
-- [ ] Security Scanning
-- [ ] Docker Image Build
-- [ ] Automatic Deployment
+- [ ] golangci-lint
+- [ ] gosec (security scanning)
+- [ ] GitHub Actions improvements
+- [ ] Multi-stage Docker image publishing
+- [ ] Automatic deployment
 
 ## Deployment
-- [ ] Docker Deployment
-- [ ] Render / Railway / Fly.io
-- [ ] VPS Deployment
+- [ ] Docker Production Compose
+- [ ] Nginx Reverse Proxy
+- [ ] HTTPS (Let's Encrypt)
+- [ ] Deploy to Render / Railway
+- [ ] Deploy to VPS
+- [ ] Domain configuration
+
+## Performance
+After deployment, revisit performance:
+
+- [ ] Redis cache metrics
+- [ ] Cache invalidation strategy
+- [ ] Load testing (hey, wrk, or k6)
+- [ ] Database indexing
+- [ ] Query optimization
 
 ---
 
@@ -182,3 +196,26 @@ The goal is to learn how production Go backend services are designed, tested, do
 - Scalable Backend Systems
 - Observability
 - Distributed Systems
+
+## frontend
+- [x] create react app
+- [x] add tailwind css
+- [x] add routing
+- [x] add authentication
+- [x] add refresh tokens
+- [x] add role-based access control (RBAC) (admin/user separation)
+- [x] create ui for admin and user
+
+## Security
+- [ ] Password reset
+- [ ] Account verification
+- [ ] CSRF/XSS understanding
+- [ ] Secure cookie authentication
+
+## New Features
+- [ ] protect malicious urls
+- [ ] Custom alias 
+- [ ] Cloudflare
+- [ ] Load balancer
+- [ ] WebSocket
+- [ ] Real-time statistics
