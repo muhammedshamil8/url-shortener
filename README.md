@@ -48,8 +48,28 @@ This service showcases clean-architecture development featuring dependency injec
 * **🧪 Testing**: 75%+ statement test coverage with mock repositories, controller unit tests, and database integration tests.
 * **🔄 Automated CI/CD**: Full automated workflows to compile/test code, build multi-stage Docker images, publish to Docker Hub, generate GitHub Releases, and auto-deploy directly to VPS over SSH.
 
+
 ---
 
+## 💎 Engineering Highlights
+
+* **Clean Architecture**: Separation of concerns using handler, service, and database layers.
+* **Repository Pattern**: Data layer abstraction to support clean database mocking during unit tests.
+* **Dependency Injection**: Explicit constructors for dependencies, avoiding global states and singletons.
+* **JWT Authentication**: Full authentication system utilizing cryptographically signed tokens.
+* **Refresh Tokens**: Token rotation and refresh flow to allow continuous user sessions securely.
+* **RBAC**: Role-Based Access Control allowing secure separation of permissions for Users and Admins.
+* **Redis Caching**: Near-zero latency URL redirects using an in-memory Redis cache.
+* **GitHub Actions**: Automated pipeline for building, testing, linting, and deploying releases.
+* **Docker Multi-stage Builds**: Statically compiled lightweight Alpine binaries for low resource consumption and tiny image footprints.
+* **Docker Compose**: Orchestration configurations tailored for local development and production.
+* **Cloudflare**: Full SSL validation proxying and DNS routing setup.
+* **Nginx Reverse Proxy**: Reverse proxying web client requests to React assets and backend API.
+* **VPS Deployment**: Low-cost, high-performance hosting on virtual private server instances.
+* **Automatic Releases**: Automatic tagged version releases on GitHub.
+* **Docker Hub Images**: Container builds published to Docker Registry for simple distribution.
+
+---
 ## 🛠️ Tech Stack
 
 | Layer | Technology | Description |
