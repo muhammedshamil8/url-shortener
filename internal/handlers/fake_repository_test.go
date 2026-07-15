@@ -16,6 +16,7 @@ type FakeRepository struct {
 	CreateShortURLFunc func(string, string, *int) (int64, error)
 
 	CreateUserFunc            func(string, string, string) (int64, error)
+	CreateUserWithRoleFunc    func(string, string, string, string) (int64, error)
 	GetUserByEmailFunc        func(string) (*models.User, error)
 	DeleteUserURLFunc         func(int) error
 	UpdateUserURLFunc         func(int, string, string) error
@@ -28,6 +29,14 @@ type FakeRepository struct {
 func (m *FakeRepository) CreateUser(username string, email string, password string) (int64, error) {
 	if m.CreateUserFunc != nil {
 		return m.CreateUserFunc(username, email, password)
+	}
+	return 1, nil
+}
+
+// CreateUserWithRole implements [Repository].
+func (m *FakeRepository) CreateUserWithRole(username string, email string, password string, role string) (int64, error) {
+	if m.CreateUserWithRoleFunc != nil {
+		return m.CreateUserWithRoleFunc(username, email, password, role)
 	}
 	return 1, nil
 }

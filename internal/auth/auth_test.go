@@ -34,7 +34,7 @@ func TestGenerateToken(t *testing.T) {
 	secret := "test-secret"
 	expiry := "15m"
 
-	token, err := GenerateToken(userID, email, secret, expiry)
+	token, err := GenerateToken(userID, email, "user", secret, expiry)
 	if err != nil {
 		t.Fatalf("failed to generate JWT token: %v", err)
 	}
@@ -49,7 +49,7 @@ func TestValidateToken(t *testing.T) {
 	secret := "test-secret"
 	expiry := "15m"
 
-	token, err := GenerateToken(userID, email, secret, expiry)
+	token, err := GenerateToken(userID, email, "user", secret, expiry)
 	if err != nil {
 		t.Fatalf("failed to generate JWT token: %v", err)
 	}
@@ -74,7 +74,7 @@ func TestValidateTokenWithInvalidToken(t *testing.T) {
 	secret := "test-secret"
 	expiry := "15m"
 
-	token, err := GenerateToken(userID, email, secret, expiry)
+	token, err := GenerateToken(userID, email, "user", secret, expiry)
 	if err != nil {
 		t.Fatalf("failed to generate JWT token: %v", err)
 	}

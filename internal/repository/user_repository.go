@@ -8,11 +8,15 @@ import (
 )
 
 func (r *Repository) CreateUser(username, email, passwordHash string) (int64, error) {
+	return r.CreateUserWithRole(username, email, passwordHash, "user")
+}
+
+func (r *Repository) CreateUserWithRole(username, email, passwordHash, role string) (int64, error) {
 	var id int64
 	err := r.db.QueryRow(
-		`INSERT INTO users (username, email, password_hash) 
-		VALUES ($1, $2, $3) RETURNING id`,
-		username, email, passwordHash,
+		`INSERT INTO users (username, email, password_hash, role) 
+		VALUES ($1, $2, $3, $4) RETURNING id`,
+		username, email, passwordHash, role,
 	).Scan(&id)
 
 	if err != nil {
@@ -25,10 +29,10 @@ func (r *Repository) CreateUser(username, email, passwordHash string) (int64, er
 func (r *Repository) GetUserByEmail(email string) (*models.User, error) {
 	var user models.User
 	err := r.db.QueryRow(
-		`SELECT id, username, email, password_hash, created_at 
+		`SELECT id, username, email, password_hash, role, created_at 
 		FROM users WHERE email = $1`,
 		email,
-	).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.CreatedAt)
+	).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.CreatedAt)
 
 	if err != nil {
 		return nil, err
@@ -114,7 +118,7 @@ func (r *Repository) GetAllURLsByUserEmail(email string) ([]models.URL, error) {
 
 func (r *Repository) GetAllUsers() ([]models.User, error) {
 	rows, err := r.db.Query(
-		`SELECT id, username, email, created_at FROM users ORDER BY id ASC`,
+		`SELECT id, username, email, role, created_at FROM users ORDER BY id ASC`,
 	)
 	if err != nil {
 		return nil, err
@@ -124,7 +128,7 @@ func (r *Repository) GetAllUsers() ([]models.User, error) {
 	var users []models.User
 	for rows.Next() {
 		var u models.User
-		err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.CreatedAt)
+		err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.Role, &u.CreatedAt)
 		if err != nil {
 			return nil, err
 		}

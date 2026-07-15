@@ -9,7 +9,7 @@ import (
 	"github.com/muhammedshamil8/url-shortener/internal/models"
 )
 
-func GenerateToken(userID int, email string, secret string, expiry string) (string, error) {
+func GenerateToken(userID int, email string, role string, secret string, expiry string) (string, error) {
 	duration, err := time.ParseDuration(expiry)
 	if err != nil {
 		duration = 24 * time.Hour
@@ -17,6 +17,7 @@ func GenerateToken(userID int, email string, secret string, expiry string) (stri
 	claims := &models.Claims{
 		UserID: userID,
 		Email:  email,
+		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
 		},

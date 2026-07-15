@@ -80,13 +80,13 @@ func (h *Handler) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	accessToken, err := auth.GenerateToken(user.ID, user.Email, h.cfg.JWT.AccessTokenSecret, h.cfg.JWT.AccessTokenExpiry)
+	accessToken, err := auth.GenerateToken(user.ID, user.Email, user.Role, h.cfg.JWT.AccessTokenSecret, h.cfg.JWT.AccessTokenExpiry)
 	if err != nil {
 		response.InternalServerError(c, "Failed to generate access token")
 		return
 	}
 
-	refreshToken, err := auth.GenerateToken(user.ID, user.Email, h.cfg.JWT.RefreshTokenSecret, h.cfg.JWT.RefreshTokenExpiry)
+	refreshToken, err := auth.GenerateToken(user.ID, user.Email, user.Role, h.cfg.JWT.RefreshTokenSecret, h.cfg.JWT.RefreshTokenExpiry)
 	if err != nil {
 		response.InternalServerError(c, "Failed to generate refresh token")
 		return
@@ -128,13 +128,13 @@ func (h *Handler) RefreshHandler(c *gin.Context) {
 	userID := claims.UserID
 	email := claims.Email
 
-	newAccessToken, err := auth.GenerateToken(userID, email, h.cfg.JWT.AccessTokenSecret, h.cfg.JWT.AccessTokenExpiry)
+	newAccessToken, err := auth.GenerateToken(userID, email, claims.Role, h.cfg.JWT.AccessTokenSecret, h.cfg.JWT.AccessTokenExpiry)
 	if err != nil {
 		response.InternalServerError(c, "Failed to generate access token")
 		return
 	}
 
-	newRefreshToken, err := auth.GenerateToken(userID, email, h.cfg.JWT.RefreshTokenSecret, h.cfg.JWT.RefreshTokenExpiry)
+	newRefreshToken, err := auth.GenerateToken(userID, email, claims.Role, h.cfg.JWT.RefreshTokenSecret, h.cfg.JWT.RefreshTokenExpiry)
 	if err != nil {
 		response.InternalServerError(c, "Failed to generate refresh token")
 		return

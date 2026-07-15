@@ -56,7 +56,7 @@ func TestAuthMiddleware(t *testing.T) {
 		{
 			name: "Valid Token",
 			setupHeader: func(req *http.Request) {
-				token, err := auth.GenerateToken(42, "user@example.com", cfg.JWT.AccessTokenSecret, cfg.JWT.AccessTokenExpiry)
+				token, err := auth.GenerateToken(42, "user@example.com", "user", cfg.JWT.AccessTokenSecret, cfg.JWT.AccessTokenExpiry)
 				if err != nil {
 					t.Fatalf("failed to generate token: %v", err)
 				}

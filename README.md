@@ -164,8 +164,18 @@ The backend API will be available at `http://localhost:8080`.
    ```
    The frontend will be served at `http://localhost:3000`.
 
-> [!NOTE]
-> The Vite dev server is preconfigured with an API proxy. Any requests made to `/api/v1` are automatically proxied to the Go backend on `http://localhost:8080`, preventing CORS issues during development.
+#### 4. Create an Admin User
+To access the Admin Dashboard features, you can create a user with the `admin` role using the CLI utility:
+* **Interactive Mode:**
+  ```bash
+  make create-admin
+  ```
+  *(You will be prompted to enter the username, email, and password securely)*
+
+* **Non-Interactive Mode (with flags):**
+  ```bash
+  go run scripts/create_admin.go -username <username> -email <email> -password <password>
+  ```
 
 ---
 

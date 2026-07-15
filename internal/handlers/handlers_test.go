@@ -671,7 +671,7 @@ func TestGetProfileHandler(t *testing.T) {
 }
 
 func TestRefreshHandler(t *testing.T) {
-	token, err := auth.GenerateToken(1, "shamil@example.com", "test-refresh-secret", "15m")
+	token, err := auth.GenerateToken(1, "shamil@example.com", "user", "test-refresh-secret", "15m")
 	if err != nil {
 		t.Fatalf("failed to generate token: %v", err)
 	}

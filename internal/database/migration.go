@@ -9,8 +9,10 @@ func MigrateUserTable(db *sql.DB) error {
 		username VARCHAR(50) NOT NULL UNIQUE,
 		password_hash TEXT NOT NULL,
 		email TEXT NOT NULL UNIQUE,
+		role VARCHAR(20) DEFAULT 'user',
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);
+	ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'user';
 	`
 
 	_, err := db.Exec(query)

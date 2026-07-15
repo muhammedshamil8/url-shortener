@@ -1,4 +1,4 @@
-.PHONY: dev run build test fmt vet swagger docker down db-reset clean
+.PHONY: dev run build test fmt vet swagger docker down db-reset clean create-admin
 
 dev:
 	air
@@ -41,5 +41,8 @@ db-reset:
 
 clean:
 	rm -f url-shortener
+
+create-admin:
+	go run scripts/create_admin.go
 
 check: fmt vet test
