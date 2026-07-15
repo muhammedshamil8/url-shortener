@@ -14,6 +14,7 @@ import (
 	"github.com/muhammedshamil8/url-shortener/internal/auth"
 	"github.com/muhammedshamil8/url-shortener/internal/cache"
 	"github.com/muhammedshamil8/url-shortener/internal/config"
+	"github.com/muhammedshamil8/url-shortener/internal/logger"
 	"github.com/muhammedshamil8/url-shortener/internal/models"
 	"github.com/muhammedshamil8/url-shortener/internal/response"
 	"github.com/muhammedshamil8/url-shortener/internal/utils"
@@ -88,7 +89,7 @@ func (h *Handler) ShortenHandler(c *gin.Context) {
 			return
 		}
 		if h.cache != nil {
-			h.cache.Set(c, shortCode, req.URL, time.Hour)
+			h.cache.Set(c, cache.URLCacheKey(shortCode), req.URL, time.Hour)
 		}
 		response.Created(c, gin.H{
 			"id":           id,
@@ -120,13 +121,14 @@ func (h *Handler) RedirectHandler(c *gin.Context) {
 	var url string
 	var err error
 	if h.cache != nil {
-		url, err = h.cache.Get(c, code)
+		url, err = h.cache.Get(c, cache.URLCacheKey(code))
 	} else {
 		err = errors.New("cache not configured")
 	}
 
 	// if cache miss get from database and set in cache
 	if err != nil {
+		logger.Log.Info("database lookup")
 		url, err = h.repo.GetURLByCode(code)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -137,8 +139,10 @@ func (h *Handler) RedirectHandler(c *gin.Context) {
 			return
 		}
 		if h.cache != nil {
-			h.cache.Set(c, code, url, time.Hour)
+			h.cache.Set(c, cache.URLCacheKey(code), url, time.Hour)
 		}
+	} else {
+		logger.Log.Info("cache hit ")
 	}
 	c.Redirect(http.StatusSeeOther, url)
 }
@@ -177,7 +181,7 @@ func (h *Handler) DeleteHandler(c *gin.Context) {
 
 	// Invalidate cache
 	if code != "" && h.cache != nil {
-		_ = h.cache.Delete(c, code)
+		_ = h.cache.Delete(c, cache.URLCacheKey(code))
 	}
 
 	response.OK(c, gin.H{
