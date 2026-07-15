@@ -1,6 +1,7 @@
 import React, { useState, FormEvent } from 'react';
 import { Link2, LayoutDashboard, ArrowRight, Copy, ExternalLink, Link } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import { API_BASE_URL } from '../config';
 
 export interface User {
   username: string;
@@ -24,6 +25,9 @@ interface ShortenedURL {
 }
 
 export default function LandingView({ user, apiFetch, navigate }: LandingViewProps) {
+  const apiBase = (API_BASE_URL || '').replace(/\/$/, '').replace(/\/api\/v1$/, '');
+  const swaggerUrl = `${apiBase}/swagger/index.html`;
+
   const [urlInput, setUrlInput] = useState('');
   const [shortenedResult, setShortenedResult] = useState<ShortenedURL | null>(null);
   const [loading, setLoading] = useState(false);
@@ -177,7 +181,7 @@ export default function LandingView({ user, apiFetch, navigate }: LandingViewPro
         <span>&copy; 2026 Snippy. Built with Go & React.</span>
         <div className="flex gap-4 mt-2 sm:mt-0">
           <a href="#/login" className="hover:text-gray-300">Admin Dashboard</a>
-          <a href="http://localhost:8080/swagger/index.html" target="_blank" className="hover:text-gray-300">API Documentation</a>
+          <a href={swaggerUrl} target="_blank" rel="noopener noreferrer" className="hover:text-gray-300">API Documentation</a>
         </div>
       </footer>
     </div>
