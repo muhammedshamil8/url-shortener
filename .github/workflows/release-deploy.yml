@@ -126,7 +126,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
-            cd /root/url-shortener
+            cd ~/url-shortener
             
             # Fetch latest repository files (to get latest compose config and Nginx conf)
             git fetch --all --tags
