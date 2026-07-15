@@ -1,8 +1,13 @@
 import axios from 'axios';
 import { API_BASE_URL } from './config';
 
+// Strip trailing /api/v1 if it is present, since all relative endpoints already start with /api/v1
+const normalizedBase = API_BASE_URL.endsWith('/api/v1') 
+  ? API_BASE_URL.slice(0, -7) 
+  : API_BASE_URL;
+
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: normalizedBase,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -68,7 +73,7 @@ api.interceptors.response.use(
         const user = JSON.parse(stored);
         if (user && user.refreshToken) {
           try {
-            const res = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, {
+            const res = await axios.post(`${normalizedBase}/api/v1/auth/refresh`, {
               refresh_token: user.refreshToken,
             });
 
