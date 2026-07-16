@@ -24,6 +24,12 @@ export default function DashboardView({ user, apiFetch }: DashboardViewProps) {
   const [stats, setStats] = useState({ totalUrls: 0, totalClicks: 0 });
   const showToast = useToast();
 
+  const displayShortUrl = shortenedResult
+    ? (shortenedResult.short_url.includes('localhost') && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+      ? `${window.location.protocol}//${window.location.host}/${shortenedResult.short_code}`
+      : shortenedResult.short_url)
+    : '';
+
   const fetchStats = async () => {
     try {
       const res = await apiFetch('/api/v1/my/urls');
@@ -137,24 +143,24 @@ export default function DashboardView({ user, apiFetch }: DashboardViewProps) {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex-1 overflow-hidden pr-4">
                 <a 
-                  href={shortenedResult.short_url} 
+                  href={displayShortUrl} 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="font-outfit text-lg font-bold text-brand-500 hover:underline break-all"
                 >
-                  {shortenedResult.short_url}
+                  {displayShortUrl}
                 </a>
                 <span className="text-xs text-gray-500 block truncate mt-0.5">{shortenedResult.original_url}</span>
               </div>
               <div className="flex gap-2">
                 <button 
-                  onClick={() => copyToClipboard(shortenedResult.short_url)}
+                  onClick={() => copyToClipboard(displayShortUrl)}
                   className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition border border-white/5"
                 >
                   <Copy className="w-4 h-4 text-gray-300" />
                 </button>
                 <a 
-                  href={shortenedResult.short_url} 
+                  href={displayShortUrl} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="p-2 bg-brand-600 hover:bg-brand-700 rounded-lg transition text-white"
