@@ -343,7 +343,7 @@ func TestGetAllURLs(t *testing.T) {
 			t.Fatalf("sorting by short_code ASC failed: first=%s, second=%s, last=%s", urls[0].ShortCode, urls[1].ShortCode, urls[4].ShortCode)
 		}
 
-		_, err = repo.GetURLByCode("def")
+		err = repo.IncrementClickCount("def")
 		if err != nil {
 			t.Fatalf("failed to increment click count: %v", err)
 		}
@@ -487,18 +487,18 @@ func TestGetAllURLs(t *testing.T) {
 		// Set clicks:
 		// "abc" -> 5 clicks
 		for i := 0; i < 5; i++ {
-			if _, err := repo.GetURLByCode("abc"); err != nil {
+			if err := repo.IncrementClickCount("abc"); err != nil {
 				t.Fatalf("failed to increment click: %v", err)
 			}
 		}
 		// "xyz" -> 3 clicks
 		for i := 0; i < 3; i++ {
-			if _, err := repo.GetURLByCode("xyz"); err != nil {
+			if err := repo.IncrementClickCount("xyz"); err != nil {
 				t.Fatalf("failed to increment click: %v", err)
 			}
 		}
 		// "def" -> 1 click
-		if _, err := repo.GetURLByCode("def"); err != nil {
+		if err := repo.IncrementClickCount("def"); err != nil {
 			t.Fatalf("failed to increment click: %v", err)
 		}
 

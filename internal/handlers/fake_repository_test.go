@@ -7,13 +7,14 @@ import (
 )
 
 type FakeRepository struct {
-	GetURLByCodeFunc   func(string) (string, error)
-	GetCodeByIDFunc    func(int) (string, error)
-	DeleteURLFunc      func(int) error
-	UpdateURLFunc      func(int, string) error
-	GetAllURLsFunc     func(models.ListOptions) ([]models.URL, error)
-	HealthFunc         func() error
-	CreateShortURLFunc func(string, string, *int) (int64, error)
+	GetURLByCodeFunc        func(string) (string, error)
+	IncrementClickCountFunc func(string) error
+	GetCodeByIDFunc         func(int) (string, error)
+	DeleteURLFunc           func(int) error
+	UpdateURLFunc           func(int, string) error
+	GetAllURLsFunc          func(models.ListOptions) ([]models.URL, error)
+	HealthFunc              func() error
+	CreateShortURLFunc      func(string, string, *int) (int64, error)
 
 	CreateUserFunc            func(string, string, string) (int64, error)
 	CreateUserWithRoleFunc    func(string, string, string, string) (int64, error)
@@ -75,6 +76,13 @@ func (m *FakeRepository) GetCodeByID(id int) (string, error) {
 		return m.GetCodeByIDFunc(id)
 	}
 	return "", nil
+}
+
+func (m *FakeRepository) IncrementClickCount(code string) error {
+	if m.IncrementClickCountFunc != nil {
+		return m.IncrementClickCountFunc(code)
+	}
+	return nil
 }
 
 func (m *FakeRepository) DeleteURL(id int) error {

@@ -26,9 +26,9 @@ const (
 )
 
 type Handler struct {
-	repo Repository
+	repo  Repository
 	cache cache.Cache
-	cfg  config.Config
+	cfg   config.Config
 }
 
 func New(repo Repository, cache cache.Cache, cfg config.Config) *Handler {
@@ -91,6 +91,7 @@ func (h *Handler) ShortenHandler(c *gin.Context) {
 		if h.cache != nil {
 			h.cache.Set(c, cache.URLCacheKey(shortCode), req.URL, time.Hour)
 		}
+
 		response.Created(c, gin.H{
 			"id":           id,
 			"original_url": req.URL,
@@ -117,33 +118,53 @@ func (h *Handler) ShortenHandler(c *gin.Context) {
 //		@Router	/{code} [get]
 func (h *Handler) RedirectHandler(c *gin.Context) {
 	code := c.Param("code")
-	// use cache to get url
-	var url string
-	var err error
+
+	var (
+		url string
+		err error
+	)
+
+	// Try cache first
 	if h.cache != nil {
 		url, err = h.cache.Get(c, cache.URLCacheKey(code))
+
+		switch {
+		case err == nil:
+			// cache hit
+
+		case errors.Is(err, cache.ErrCacheMiss):
+			// cache miss
+
+		default:
+			logger.Log.Error("Redis error", "error", err)
+		}
 	} else {
-		err = errors.New("cache not configured")
+		err = errors.New("cache disabled")
 	}
 
-	// if cache miss get from database and set in cache
+	// Cache miss → database lookup
 	if err != nil {
-		logger.Log.Info("database lookup")
 		url, err = h.repo.GetURLByCode(code)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				response.NotFound(c, "URL not found")
 				return
 			}
+
 			response.InternalServerError(c, "Database error")
 			return
 		}
+
 		if h.cache != nil {
-			h.cache.Set(c, cache.URLCacheKey(code), url, time.Hour)
+			_ = h.cache.Set(c, cache.URLCacheKey(code), url, time.Hour)
 		}
-	} else {
-		logger.Log.Info("cache hit ")
 	}
+
+	// Increment clicks (regardless of cache hit or miss)
+	if err := h.repo.IncrementClickCount(code); err != nil {
+		logger.Log.Error("Failed to increment click count", "code", code, "error", err)
+	}
+
 	c.Redirect(http.StatusSeeOther, url)
 }
 
