@@ -43,16 +43,15 @@ func GetClaims(c *gin.Context) *models.Claims {
 }
 
 func AdminOnly() gin.HandlerFunc {
-    return func(c *gin.Context) {
-        claims := GetClaims(c)
+	return func(c *gin.Context) {
+		claims := GetClaims(c)
 
-        if claims.Role != "admin" {
-            response.Forbidden(c, "Forbidden")
-            c.Abort()
-            return
-        }
+		if claims.Role != "admin" {
+			response.Forbidden(c, "Forbidden")
+			c.Abort()
+			return
+		}
 
-        c.Next()
-    }
+		c.Next()
+	}
 }
-

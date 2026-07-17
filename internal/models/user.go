@@ -42,8 +42,8 @@ type RefreshResponse struct {
 }
 
 type Claims struct {
-    UserID int
-    Email  string
-    Role   string
-    jwt.RegisteredClaims
+	UserID int
+	Email  string
+	Role   string
+	jwt.RegisteredClaims
 }
