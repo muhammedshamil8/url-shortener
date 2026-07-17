@@ -6,6 +6,9 @@ dev:
 dev-app:
 	cd frontend && npm run dev
 
+infra:
+	docker compose -f docker-compose.dev.yml up -d postgres redis
+
 run:
 	go run .
 
