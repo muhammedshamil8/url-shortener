@@ -15,6 +15,7 @@ import (
 	"github.com/muhammedshamil8/url-shortener/internal/cache"
 	"github.com/muhammedshamil8/url-shortener/internal/config"
 	"github.com/muhammedshamil8/url-shortener/internal/logger"
+	"github.com/muhammedshamil8/url-shortener/internal/metrics"
 	"github.com/muhammedshamil8/url-shortener/internal/models"
 	"github.com/muhammedshamil8/url-shortener/internal/response"
 	"github.com/muhammedshamil8/url-shortener/internal/utils"
@@ -91,6 +92,7 @@ func (h *Handler) ShortenHandler(c *gin.Context) {
 		if h.cache != nil {
 			h.cache.Set(c, cache.URLCacheKey(shortCode), req.URL, time.Hour)
 		}
+		metrics.URLCreated()
 
 		response.Created(c, gin.H{
 			"id":           id,
@@ -130,15 +132,18 @@ func (h *Handler) RedirectHandler(c *gin.Context) {
 
 		switch {
 		case err == nil:
-			// cache hit
+			metrics.CacheResult("hit")
 
 		case errors.Is(err, cache.ErrCacheMiss):
-			// cache miss
+			metrics.CacheResult("miss")
 
 		default:
+			metrics.CacheResult("error")
 			logger.Log.Error("Redis error", "error", err)
 		}
 	} else {
+		logger.Log.Info("Cache disabled")
+		metrics.CacheResult("disabled")
 		err = errors.New("cache disabled")
 	}
 
@@ -147,6 +152,7 @@ func (h *Handler) RedirectHandler(c *gin.Context) {
 		url, err = h.repo.GetURLByCode(code)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
+				metrics.Redirect("not_found")
 				response.NotFound(c, "URL not found")
 				return
 			}
@@ -164,6 +170,8 @@ func (h *Handler) RedirectHandler(c *gin.Context) {
 	if err := h.repo.IncrementClickCount(code); err != nil {
 		logger.Log.Error("Failed to increment click count", "code", code, "error", err)
 	}
+
+	metrics.Redirect("success")
 
 	c.Redirect(http.StatusSeeOther, url)
 }
