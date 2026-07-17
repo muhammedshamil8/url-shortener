@@ -68,7 +68,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -87,10 +87,32 @@ services:
       - "6379:6379"
 
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 5s
       retries: 5
+
+    networks:
+      - backend
+
+  prometheus:
+    container_name: url-shortener-dev-prometheus
+
+    image: prom/prometheus:latest
+
+    restart: unless-stopped
+
+    ports:
+      - "9090:9090"
+
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
 
     networks:
       - backend
