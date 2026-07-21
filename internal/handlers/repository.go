@@ -9,6 +9,7 @@ type Repository interface {
 
 type URLRepository interface {
 	CreateShortURL(shortCode, url string, userID *int) (int64, error)
+	IncrementClickCount(code string) error
 	GetURLByCode(code string) (string, error)
 	GetCodeByID(id int) (string, error)
 	DeleteURL(id int) error

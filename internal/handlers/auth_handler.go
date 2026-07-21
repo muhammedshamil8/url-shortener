@@ -145,4 +145,3 @@ func (h *Handler) RefreshHandler(c *gin.Context) {
 		RefreshToken: newRefreshToken,
 	})
 }
-

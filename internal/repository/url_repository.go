@@ -40,18 +40,24 @@ func (r *Repository) GetURLByCode(code string) (string, error) {
 	var url string
 
 	err := r.db.QueryRow(
-		`UPDATE urls
-		 SET click_count = click_count + 1
-		 WHERE short_code = $1
-		 RETURNING original_url`,
+		`SELECT original_url
+		 FROM urls
+		 WHERE short_code = $1`,
 		code,
 	).Scan(&url)
 
-	if err != nil {
-		return "", err
-	}
+	return url, err
+}
 
-	return url, nil
+func (r *Repository) IncrementClickCount(code string) error {
+	_, err := r.db.Exec(
+		`UPDATE urls
+		 SET click_count = click_count + 1
+		 WHERE short_code = $1`,
+		code,
+	)
+
+	return err
 }
 
 func (r *Repository) GetCodeByID(id int) (string, error) {

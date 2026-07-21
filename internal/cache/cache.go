@@ -26,7 +26,11 @@ func URLCacheKey(code string) string {
 }
 
 func (r *RedisCache) Get(ctx context.Context, key string) (string, error) {
-	return r.client.Get(ctx, key).Result()
+	result, err := r.client.Get(ctx, key).Result()
+	if err == redis.Nil {
+		return "", ErrCacheMiss
+	}
+	return result, err
 }
 
 func (r *RedisCache) Set(ctx context.Context, key string, value string, ttl time.Duration) error {

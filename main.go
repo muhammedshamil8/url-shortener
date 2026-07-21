@@ -15,11 +15,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	_ "github.com/muhammedshamil8/url-shortener/docs"
+	"github.com/muhammedshamil8/url-shortener/internal/cache"
 	"github.com/muhammedshamil8/url-shortener/internal/config"
 	"github.com/muhammedshamil8/url-shortener/internal/database"
 	"github.com/muhammedshamil8/url-shortener/internal/handlers"
-	"github.com/muhammedshamil8/url-shortener/internal/cache"
 	"github.com/muhammedshamil8/url-shortener/internal/logger"
+	"github.com/muhammedshamil8/url-shortener/internal/metrics"
 	"github.com/muhammedshamil8/url-shortener/internal/redis"
 	"github.com/muhammedshamil8/url-shortener/internal/repository"
 	"github.com/muhammedshamil8/url-shortener/internal/routes"
@@ -79,7 +80,7 @@ func main() {
 		logger.Log.Error("Failed to set trusted proxies", "error", err)
 		os.Exit(1)
 	}
-
+	metrics.Register()
 	routes.Setup(r, h, cfg)
 
 	logger.Log.Info("Server running on port " + cfg.Server.Port)

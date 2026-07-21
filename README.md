@@ -4,11 +4,22 @@
 [![Build Status](https://img.shields.io/github/actions/workflow/status/muhammedshamil8/url-shortener/go-tests.yml?branch=dev&style=flat-square)](https://github.com/muhammedshamil8/url-shortener/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/muhammedshamil8/url-shortener?style=flat-square)](https://goreportcard.com/report/github.com/muhammedshamil8/url-shortener)
 
-A production-ready, full-stack high-performance URL shortener built with **Go (Gin)**, **PostgreSQL**, **Redis**, and **React (Vite + TypeScript + Tailwind CSS)**.
+A production-ready, full-stack high-performance URL shortener built with **Go (Gin)**, **PostgreSQL**, **Redis**, and **React (Vite + TypeScript + Tailwind CSS)**, featuring integrated observability with **Prometheus**, **Grafana**, **OpenTelemetry**, and **Tempo**.
 
-This service showcases clean-architecture development featuring dependency injection, JWT-based Authentication, Role-Based Access Control (RBAC), Redis-based response caching, comprehensive test suites, dynamic pagination/filtering, containerization, and automated CI/CD pipelines.
+---
 
-## 📐 System Architecture
+## 💡 Motivation
+
+Building a simple URL shortener is a common programming exercise, but making it **production-ready**, **highly available**, **secure**, and **observable** at scale requires robust architectural decisions. 
+
+This project was built to showcase best practices in:
+* **Clean Architecture**: Domain isolation using Handler, Service, and Repository patterns.
+* **Security**: JWT-based Authentication with refresh token rotation and Role-Based Access Control (RBAC).
+* **Caching**: Near-zero latency URL redirects using Redis.
+* **Observability**: Real-time tracing and metrics collection using OpenTelemetry, Prometheus, Tempo, and Grafana.
+* **DevOps**: Complete multi-stage Docker containerization, Docker Compose setups, and Git Tag-based CI/CD workflows for automated VPS deployments.
+
+### 📐 System Architecture
 
 ```text
                                   Browser Client (HTTPS)
@@ -32,9 +43,7 @@ This service showcases clean-architecture development featuring dependency injec
                                        PostgreSQL         Redis Cache
 ```
 
----
-
-## 🚀 Key Features
+### 🚀 Key Features
 
 * **⚡ Core API**: URL shortening, click tracking, custom error responses, and redirects.
 * **🛡️ Security & Authentication**: JWT authentication with Access and Refresh token flow. Role-based route authorization (Admin & Users).
@@ -44,14 +53,12 @@ This service showcases clean-architecture development featuring dependency injec
 * **📦 Architecture**: Clean architecture with the Repository pattern, interfaces, and strict Dependency Injection.
 * **🛡️ Reliability & Protection**: IP-based rate limiting, CORS configurations, environment validation, and graceful server shutdown.
 * **🩺 Health Probes**: Live (`/live`) and database-connected Ready (`/ready`) endpoints.
+* **📊 Integrated Observability**: Full OTel (OpenTelemetry) tracing exported to Grafana Tempo, custom Prometheus metrics for requests, redirects, and cache hits, and a pre-configured Grafana dashboard.
 * **📖 Interactive Docs**: API documentation generated with Swagger UI.
 * **🧪 Testing**: 75%+ statement test coverage with mock repositories, controller unit tests, and database integration tests.
 * **🔄 Automated CI/CD**: Full automated workflows to compile/test code, build multi-stage Docker images, publish to Docker Hub, generate GitHub Releases, and auto-deploy directly to VPS over SSH.
 
-
----
-
-## 💎 Engineering Highlights
+### 💎 Engineering Highlights
 
 * **Clean Architecture**: Separation of concerns using handler, service, and database layers.
 * **Repository Pattern**: Data layer abstraction to support clean database mocking during unit tests.
@@ -60,6 +67,7 @@ This service showcases clean-architecture development featuring dependency injec
 * **Refresh Tokens**: Token rotation and refresh flow to allow continuous user sessions securely.
 * **RBAC**: Role-Based Access Control allowing secure separation of permissions for Users and Admins.
 * **Redis Caching**: Near-zero latency URL redirects using an in-memory Redis cache.
+* **Observability Stack**: Unified telemetry (metrics & traces) collection using OpenTelemetry Collector.
 * **GitHub Actions**: Automated pipeline for building, testing, linting, and deploying releases.
 * **Docker Multi-stage Builds**: Statically compiled lightweight Alpine binaries for low resource consumption and tiny image footprints.
 * **Docker Compose**: Orchestration configurations tailored for local development and production.
@@ -69,8 +77,7 @@ This service showcases clean-architecture development featuring dependency injec
 * **Automatic Releases**: Automatic tagged version releases on GitHub.
 * **Docker Hub Images**: Container builds published to Docker Registry for simple distribution.
 
----
-## 🛠️ Tech Stack
+### 🛠️ Tech Stack
 
 | Layer | Technology | Description |
 | :--- | :--- | :--- |
@@ -82,13 +89,12 @@ This service showcases clean-architecture development featuring dependency injec
 | **Database** | PostgreSQL 17 | Relational database storage with auto migrations |
 | **Caching** | Redis 7 | In-memory key-value store for redirect response caching |
 | **Authentication** | JWT (v5) & bcrypt | Token-based secure user sessions and password hashing |
+| **Observability** | OpenTelemetry, Prometheus, Tempo & Grafana | Distributed tracing, application metrics, and visualization dashboard |
 | **API Docs** | Swagger | Auto-generated OpenAPI 2.0 specifications |
 | **Logging** | slog | Structured, leveled logging in JSON format |
 | **CI/CD** | GitHub Actions | Automated lint, test, docker build, release, and SSH deploy |
 
----
-
-## 📁 Project Structure
+### 📁 Project Structure
 
 ```text
 url-shortener/
@@ -121,12 +127,18 @@ url-shortener/
 │   ├── database/           # Postgres initialization and migrations
 │   ├── handlers/           # HTTP controllers and routing handlers
 │   ├── logger/             # Structured slog logger integration
-│   ├── middleware/         # Rate limiter, CORS, request logging, JWT Auth
+│   ├── metrics/            # Custom Prometheus metrics definitions
+│   ├── middleware/         # Rate limiter, CORS, request logging, JWT Auth, Metrics
 │   ├── models/             # Shared entities, request/response models, and Claims
 │   ├── redis/              # Redis client initialization
 │   ├── repository/         # Postgres queries and database layer
 │   ├── response/           # Consistent, unified JSON response payloads
 │   └── utils/              # Helper functions (e.g., URL validation, shortcode generators)
+├── otel/                   # OpenTelemetry collector & Grafana Tempo configs
+│   ├── collector-config.yaml
+│   └── tempo.yaml
+├── prometheus/             # Prometheus configuration
+│   └── prometheus.yml
 ├── .env.example            # Environment template configuration
 ├── Dockerfile              # Multi-stage optimized builder image for backend API
 ├── docker-compose.dev.yml  # Multi-container orchestration config for local development
@@ -142,26 +154,31 @@ url-shortener/
 
 ---
 
-## ⚙️ Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
 * [Go 1.26+](https://golang.org/dl/)
 * [Node.js 18+](https://nodejs.org/) & `npm`
 * [Docker & Compose](https://www.docker.com/)
 
----
+### 1. Run Everything with Docker Compose (Recommended)
 
-### Running the Services
-
-#### 1. Running in Development (Local Docker Compose)
-You can start the backend service alongside Postgres, Redis, and the hot-reloaded Frontend development server:
+Start the entire stack including backend, frontend, database, cache, and the observability services:
 ```bash
 docker compose -f docker-compose.dev.yml up --build
 ```
-* The backend API will be available at `http://localhost:8080`.
-* The frontend will be available at `http://localhost:5173`.
 
-#### 2. Running Backend Locally (No Docker)
+Once running, the following endpoints will be available:
+* **React Frontend**: `http://localhost:5173`
+* **Backend API**: `http://localhost:8080`
+* **Prometheus Dashboard**: `http://localhost:9090`
+* **Grafana Dashboard**: `http://localhost:3000`
+* **Tempo Tracing**: `http://localhost:3200`
+* **OTel Collector (HTTP receiver)**: `http://localhost:4318`
+
+### 2. Run Services Individually (No Docker)
+
+#### Running Backend locally:
 1. Clone the repository and configure your environment:
    ```bash
    cp .env.example .env
@@ -179,7 +196,7 @@ docker compose -f docker-compose.dev.yml up --build
    make test
    ```
 
-#### 3. Running Frontend Locally (No Docker)
+#### Running Frontend locally:
 1. Navigate to the `frontend` directory:
    ```bash
    cd frontend
@@ -194,12 +211,10 @@ docker compose -f docker-compose.dev.yml up --build
    ```
    The frontend will be served at `http://localhost:5173`.
 
----
-
 ### 🛡️ Admin Account Setup
 
 #### In Development
-To access the Admin Dashboard features, you can create a user with the `admin` role using the interactive CLI utility locally:
+To access the Admin Dashboard features, create a user with the `admin` role using the interactive CLI utility locally:
 ```bash
 make create-admin
 ```
@@ -219,11 +234,49 @@ docker run -it --rm \
 
 ---
 
-## 🚀 CI/CD & Deployments
+## 🛠️ Usage
 
-The project features a fully automated Git Tag-based CI/CD pipeline using GitHub Actions. 
+### 📡 API Reference
 
-### Triggering a Release
+#### Health Check & Metrics
+* `GET /api/v1/live` — Liveness probe (always returns 200)
+* `GET /api/v1/ready` — Readiness probe (pings database connection)
+* `GET /metrics` — Prometheus metrics export
+* `GET /swagger/index.html` — Swagger UI documentation
+
+#### Authentication Endpoints
+* `POST /api/v1/auth/register` — Register a new user account.
+* `POST /api/v1/auth/login` — Authenticate and retrieve Access + Refresh Tokens.
+* `POST /api/v1/auth/refresh` — Refresh expired access token using the refresh token.
+
+#### Public Shortener Endpoints
+* `POST /api/v1/shorten` — Create a shortened URL.
+* `GET /{code}` — Redirects to original URL with a `302 Found` status and increments the click count.
+
+#### User Endpoints (Requires Access Token)
+* `GET /api/v1/me` — Retrieve profile details of the authenticated user.
+* `GET /api/v1/my/urls` — Get all shortened URLs belonging to the authenticated user.
+* `PUT /api/v1/my/urls/:id` — Update the destination target original URL for a shortened URL.
+* `DELETE /api/v1/my/urls/:id` — Delete a shortened URL owned by the authenticated user.
+
+#### Admin Endpoints (Requires Admin Access Token)
+* `GET /api/v1/admin/urls` — List and filter all shortened URLs across all users.
+* `DELETE /api/v1/admin/urls/:id` — Deletes any shortened URL by ID.
+* `GET /api/v1/admin/users` — List all registered user accounts.
+* `DELETE /api/v1/admin/users/:id` — Remove a user account (and cascade deletes their URLs).
+
+### 📊 Observability & Monitoring
+
+The service includes integrated telemetry to track performance:
+* **Prometheus Metrics**: High-level application metrics like URL creation count (`snippy_urls_created_total`), redirects (`snippy_redirects_total`), request duration (`snippy_request_duration_seconds`), and cache hit/miss count (`snippy_cache_total`).
+* **Grafana Tracing**: Distributed tracing of backend HTTP requests via OpenTelemetry exported to Tempo.
+* **Grafana**: Accessible at `http://localhost:3000` (default login: `admin`/`admin`). Add Prometheus (`http://prometheus:9090`) and Tempo (`http://tempo:3200`) as data sources to visualize metrics and query tracing spans.
+
+### 🚀 CI/CD & Deployments
+
+The project features a fully automated Git Tag-based CI/CD pipeline using GitHub Actions.
+
+#### Triggering a Release
 To release and deploy a new version of the app (e.g. `v1.0.3`):
 ```bash
 git tag v1.0.3
@@ -239,70 +292,23 @@ This triggers the `.github/workflows/release-deploy.yml` pipeline which:
 
 For detailed VPS setup instructions, see the [Deployment Guide](docs/deployment.md).
 
----
+### 📈 Development Roadmap
 
-## 📡 API Reference
-
-### Health Check & Swagger Docs
-* `GET /api/v1/live` — Liveness probe (always returns 200)
-* `GET /api/v1/ready` — Readiness probe (pings database connection)
-* `GET /swagger/index.html` — Swagger UI documentation
-
-### Authentication Endpoints
-* `POST /api/v1/auth/register` — Register a new user account.
-* `POST /api/v1/auth/login` — Authenticate and retrieve Access + Refresh Tokens.
-* `POST /api/v1/auth/refresh` — Refresh expired access token using the refresh token.
-
-### Public Shortener Endpoints
-* `POST /api/v1/shorten` — Create a shortened URL.
-* `GET /{code}` — Redirects to original URL with a `302 Found` status and increments the click count.
-
-### User Endpoints (Requires Access Token)
-* `GET /api/v1/me` — Retrieve profile details of the authenticated user.
-* `GET /api/v1/my/urls` — Get all shortened URLs belonging to the authenticated user.
-* `PUT /api/v1/my/urls/:id` — Update the destination target original URL for a shortened URL.
-* `DELETE /api/v1/my/urls/:id` — Delete a shortened URL owned by the authenticated user.
-
-### Admin Endpoints (Requires Admin Access Token)
-* `GET /api/v1/admin/urls` — List and filter all shortened URLs across all users.
-* `DELETE /api/v1/admin/urls/:id` — Deletes any shortened URL by ID.
-* `GET /api/v1/admin/users` — List all registered user accounts.
-* `DELETE /api/v1/admin/users/:id` — Remove a user account (and cascade deletes their URLs).
+* **Phase 1 — Backend Foundations** ✅
+* **Phase 2 — Production Readiness** (Multi-stage Docker, Rate Limiter, Pagination/Sorting, Probes) ✅
+* **Phase 3 — Scalability & Security** (JWT + Refresh Tokens, RBAC, Redis Cache) ✅
+* **Phase 4 — Frontend Client** (React/TS Dashboard, Axios Interceptors, Search/Filters UI) ✅
+* **Phase 5 — Cloud Deployment** (Cloudflare DNS/SSL, Automated CI/CD VPS Deployments) ✅
+* **Phase 6 — Observability & Tracing** (Prometheus, Grafana, OpenTelemetry, Tempo integration) ✅
+* **Phase 7 — Advanced Security & Real-Time Stats** 🚧 (Malicious URL checks, Custom shortcode aliases, WebSocket connections / real-time stats)
 
 ---
 
-## 📈 Development Roadmap
+## 🤝 Contributing
 
-### Phase 1 — Backend Foundations ✅
-* Gin HTTP routing engine
-* PostgreSQL Repository pattern with migrations
-* Dependency Injection & Interfaces
-* Graceful server shutdown & CORS middleware
-* OpenAPI/Swagger docs UI
+We welcome contributions to this project! Please follow these guidelines:
 
-### Phase 2 — Production Readiness ✅
-* Multi-stage Docker containerization
-* Makefile scripting for local workflows
-* IP Rate limiting middleware
-* Dynamic pagination, sorting, and filter bounds
-* Liveness `/live` and readiness `/ready` probes
-
-### Phase 3 — Scalability & Security ✅
-* JWT Session-based Authentication & Token Refresh ✅
-* Role-based Access Control (RBAC) (Admin/User separation) ✅
-* Redis response caching layer ✅
-
-### Phase 4 — Frontend Client ✅
-* Vite + React + TypeScript setup with Tailwind CSS ✅
-* Custom client Hash Routing (Landing, Login, Register, User/Admin panels) ✅
-* Axios API integration with automatic token refreshing ✅
-* Dynamic pagination, query searches, and filters UI ✅
-
-### Phase 5 — Cloud Deployment ✅
-* Cloudflare DNS, SSL & Proxy setup ✅
-* Automated CI/CD deployments directly to VPS over SSH ✅
-
-### Phase 6 — Advanced Features 🚧
-* Malicious URL checking/protection
-* Custom shortcode aliases
-* WebSocket connections / Real-time statistics dashboard
+1. **Read the Contributing Guide**: Refer to our [Contributing Guidelines](CONTRIBUTING.md) for standard workflow procedures.
+2. **Code of Conduct**: Be respectful and professional. See our [Code of Conduct](CODE_OF_CONDUCT.md).
+3. **Security Reports**: Do not disclose security vulnerabilities publicly. Follow our [Security Policy](SECURITY.md).
+4. **License**: This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

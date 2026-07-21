@@ -15,6 +15,7 @@ import (
 	"github.com/muhammedshamil8/url-shortener/internal/cache"
 	"github.com/muhammedshamil8/url-shortener/internal/config"
 	"github.com/muhammedshamil8/url-shortener/internal/logger"
+	"github.com/muhammedshamil8/url-shortener/internal/metrics"
 	"github.com/muhammedshamil8/url-shortener/internal/models"
 	"github.com/muhammedshamil8/url-shortener/internal/response"
 	"github.com/muhammedshamil8/url-shortener/internal/utils"
@@ -26,9 +27,9 @@ const (
 )
 
 type Handler struct {
-	repo Repository
+	repo  Repository
 	cache cache.Cache
-	cfg  config.Config
+	cfg   config.Config
 }
 
 func New(repo Repository, cache cache.Cache, cfg config.Config) *Handler {
@@ -91,6 +92,8 @@ func (h *Handler) ShortenHandler(c *gin.Context) {
 		if h.cache != nil {
 			h.cache.Set(c, cache.URLCacheKey(shortCode), req.URL, time.Hour)
 		}
+		metrics.URLCreated()
+
 		response.Created(c, gin.H{
 			"id":           id,
 			"original_url": req.URL,
@@ -117,33 +120,59 @@ func (h *Handler) ShortenHandler(c *gin.Context) {
 //		@Router	/{code} [get]
 func (h *Handler) RedirectHandler(c *gin.Context) {
 	code := c.Param("code")
-	// use cache to get url
-	var url string
-	var err error
+
+	var (
+		url string
+		err error
+	)
+
+	// Try cache first
 	if h.cache != nil {
 		url, err = h.cache.Get(c, cache.URLCacheKey(code))
+
+		switch {
+		case err == nil:
+			metrics.CacheResult("hit")
+
+		case errors.Is(err, cache.ErrCacheMiss):
+			metrics.CacheResult("miss")
+
+		default:
+			metrics.CacheResult("error")
+			logger.Log.Error("Redis error", "error", err)
+		}
 	} else {
-		err = errors.New("cache not configured")
+		logger.Log.Info("Cache disabled")
+		metrics.CacheResult("disabled")
+		err = errors.New("cache disabled")
 	}
 
-	// if cache miss get from database and set in cache
+	// Cache miss → database lookup
 	if err != nil {
-		logger.Log.Info("database lookup")
 		url, err = h.repo.GetURLByCode(code)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
+				metrics.Redirect("not_found")
 				response.NotFound(c, "URL not found")
 				return
 			}
+
 			response.InternalServerError(c, "Database error")
 			return
 		}
+
 		if h.cache != nil {
-			h.cache.Set(c, cache.URLCacheKey(code), url, time.Hour)
+			_ = h.cache.Set(c, cache.URLCacheKey(code), url, time.Hour)
 		}
-	} else {
-		logger.Log.Info("cache hit ")
 	}
+
+	// Increment clicks (regardless of cache hit or miss)
+	if err := h.repo.IncrementClickCount(code); err != nil {
+		logger.Log.Error("Failed to increment click count", "code", code, "error", err)
+	}
+
+	metrics.Redirect("success")
+
 	c.Redirect(http.StatusSeeOther, url)
 }
 

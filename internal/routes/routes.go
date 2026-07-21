@@ -5,6 +5,7 @@ import (
 	"github.com/muhammedshamil8/url-shortener/internal/config"
 	"github.com/muhammedshamil8/url-shortener/internal/handlers"
 	"github.com/muhammedshamil8/url-shortener/internal/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -16,10 +17,12 @@ func Setup(r *gin.Engine, h *handlers.Handler, cfg *config.Config) {
 	r.Use(middleware.Logger())
 	rateLimiter := middleware.NewRateLimiter()
 	r.Use(middleware.RateLimit(rateLimiter))
+	r.Use(middleware.PrometheusMiddleware())
 
 	jwtMiddleware := middleware.AuthMiddleware(cfg)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	r.GET("/:code", h.RedirectHandler)
 
 	api := r.Group("/api/v1")
